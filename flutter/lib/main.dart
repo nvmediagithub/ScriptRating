@@ -9,6 +9,7 @@ import 'screens/results_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/feedback_screen.dart';
 import 'screens/report_generation_screen.dart';
+import 'screens/llm_dashboard_screen.dart';
 
 void main() {
   setupLocator();
@@ -33,10 +34,7 @@ class MyApp extends StatelessWidget {
 
 final GoRouter _router = GoRouter(
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const HomeScreen(),
-    ),
+    GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
     GoRoute(
       path: '/upload',
       builder: (context, state) => const DocumentUploadScreen(),
@@ -61,6 +59,9 @@ final GoRouter _router = GoRouter(
       path: '/report',
       builder: (context, state) => const ReportGenerationScreen(),
     ),
+    GoRoute(
+      path: '/llm',
+      builder: (context, state) => const LlmDashboardScreen(),
+    ),
   ],
 );
-

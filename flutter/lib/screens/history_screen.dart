@@ -81,7 +81,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Analysis'),
-        content: const Text('Are you sure you want to delete this analysis from history?'),
+        content: const Text(
+          'Are you sure you want to delete this analysis from history?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -93,9 +95,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
               setState(() {
                 _historyItems.removeWhere((item) => item['id'] == id);
               });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Analysis deleted')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Analysis deleted')));
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -117,116 +119,113 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _error!,
-                        style: const TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadHistory,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
                   ),
-                )
-              : _historyItems.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.history,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'No analysis history found',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ],
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadHistory,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : _historyItems.isEmpty
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.history, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'No analysis history found',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              itemCount: _historyItems.length,
+              itemBuilder: (context, index) {
+                final item = _historyItems[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: _getRatingColor(item['rating']),
+                      child: Text(
+                        item['rating'],
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    )
-                  : ListView.builder(
-                      itemCount: _historyItems.length,
-                      itemBuilder: (context, index) {
-                        final item = _historyItems[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: _getRatingColor(item['rating']),
-                              child: Text(
-                                item['rating'],
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              item['title'],
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Analyzed on ${item['date']}'),
-                                const SizedBox(height: 4),
-                                Wrap(
-                                  spacing: 4,
-                                  children: (item['categories'] as List<String>)
-                                      .map((category) => Chip(
-                                            label: Text(
-                                              category,
-                                              style: const TextStyle(fontSize: 12),
-                                            ),
-                                            materialTapTargetSize:
-                                                MaterialTapTargetSize.shrinkWrap,
-                                            padding: EdgeInsets.zero,
-                                          ))
-                                      .toList(),
-                                ),
-                              ],
-                            ),
-                            trailing: PopupMenuButton<String>(
-                              onSelected: (value) {
-                                if (value == 'view') {
-                                  _viewResult(item['id']);
-                                } else if (value == 'delete') {
-                                  _deleteItem(item['id']);
-                                }
-                              },
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(
-                                  value: 'view',
-                                  child: Text('View Results'),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'delete',
-                                  child: Text('Delete', style: TextStyle(color: Colors.red)),
-                                ),
-                              ],
-                            ),
-                            onTap: () => _viewResult(item['id']),
-                          ),
-                        );
-                      },
                     ),
+                    title: Text(
+                      item['title'],
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Analyzed on ${item['date']}'),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 4,
+                          children: (item['categories'] as List<String>)
+                              .map(
+                                (category) => Chip(
+                                  label: Text(
+                                    category,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  padding: EdgeInsets.zero,
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ],
+                    ),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'view') {
+                          _viewResult(item['id']);
+                        } else if (value == 'delete') {
+                          _deleteItem(item['id']);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'view',
+                          child: Text('View Results'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Text(
+                            'Delete',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                    onTap: () => _viewResult(item['id']),
+                  ),
+                );
+              },
+            ),
     );
   }
 

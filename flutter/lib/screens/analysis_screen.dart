@@ -71,18 +71,11 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.analytics,
-                size: 80,
-                color: Colors.blue,
-              ),
+              const Icon(Icons.analytics, size: 80, color: Colors.blue),
               const SizedBox(height: 32),
               const Text(
                 'Script Analysis in Progress',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 48),
               SizedBox(
@@ -138,10 +131,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               if (_isCompleted)
                 const Text(
                   'Analysis completed successfully!',
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(color: Colors.green, fontSize: 16),
                 ),
             ],
           ),

@@ -5,10 +5,7 @@ import '../models/script.dart';
 class ScriptListItem extends StatelessWidget {
   final Script script;
 
-  const ScriptListItem({
-    super.key,
-    required this.script,
-  });
+  const ScriptListItem({super.key, required this.script});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +29,9 @@ class ScriptListItem extends StatelessWidget {
                 ],
               ),
             if (script.createdAt != null)
-              Text('Created: ${script.createdAt!.toLocal().toString().split(' ')[0]}'),
+              Text(
+                'Created: ${script.createdAt!.toLocal().toString().split(' ')[0]}',
+              ),
           ],
         ),
         trailing: Row(

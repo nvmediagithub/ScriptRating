@@ -9,8 +9,9 @@ class SceneDetailWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final highestSeverity = assessment.categories.values
-        .reduce((a, b) => a.index > b.index ? a : b);
+    final highestSeverity = assessment.categories.values.reduce(
+      (a, b) => a.index > b.index ? a : b,
+    );
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -65,7 +66,9 @@ class SceneDetailWidget extends StatelessWidget {
                     color: _getSeverityColor(highestSeverity).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: _getSeverityColor(highestSeverity).withOpacity(0.3),
+                      color: _getSeverityColor(
+                        highestSeverity,
+                      ).withOpacity(0.3),
                     ),
                   ),
                   child: Text(
@@ -95,10 +98,7 @@ class SceneDetailWidget extends StatelessWidget {
                 runSpacing: 6,
                 children: assessment.flaggedContent.map((content) {
                   return Chip(
-                    label: Text(
-                      content,
-                      style: const TextStyle(fontSize: 12),
-                    ),
+                    label: Text(content, style: const TextStyle(fontSize: 12)),
                     backgroundColor: Colors.red.shade50,
                     side: const BorderSide(color: Colors.red),
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -117,11 +117,7 @@ class SceneDetailWidget extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.info_outline,
-                    size: 16,
-                    color: Colors.grey,
-                  ),
+                  const Icon(Icons.info_outline, size: 16, color: Colors.grey),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

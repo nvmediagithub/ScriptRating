@@ -245,3 +245,165 @@ class ErrorResponse(BaseModel):
     """Standard error response."""
     error: ErrorDetail = Field(..., description="Error details")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Error timestamp")
+
+
+# LLM Configuration DTOs
+class LLMProvider(str, Enum):
+    """LLM provider types."""
+    LOCAL = "local"
+    OPENROUTER = "openrouter"
+
+
+class LLMProviderSettings(BaseModel):
+    """Settings for LLM providers."""
+    provider: LLMProvider = Field(..., description="LLM provider type")
+    api_key: Optional[str] = Field(None, description="API key for external providers")
+    base_url: Optional[str] = Field(None, description="Base URL for local LLM server")
+    timeout: int = Field(30, description="Request timeout in seconds")
+    max_retries: int = Field(3, description="Maximum retry attempts")
+
+
+class LLMModelConfig(BaseModel):
+    """Configuration for LLM models."""
+    model_name: str = Field(..., description="Name of the LLM model")
+    provider: LLMProvider = Field(..., description="Provider for this model")
+    context_window: int = Field(4096, description="Maximum context window size")
+    max_tokens: int = Field(2048, description="Maximum output tokens")
+    temperature: float = Field(0.7, description="Sampling temperature")
+    top_p: float = Field(0.9, description="Top-p sampling parameter")
+    frequency_penalty: float = Field(0.0, description="Frequency penalty")
+    presence_penalty: float = Field(0.0, description="Presence penalty")
+
+
+class LLMStatusResponse(BaseModel):
+    """Response model for LLM status checks."""
+    provider: LLMProvider = Field(..., description="LLM provider")
+    available: bool = Field(..., description="Whether the provider is available")
+    healthy: bool = Field(..., description="Health status indicator")
+    response_time_ms: Optional[float] = Field(None, description="Response time in milliseconds")
+    error_message: Optional[str] = Field(None, description="Error message if unhealthy")
+    last_checked_at: datetime = Field(..., description="Last health check timestamp")
+
+
+class LLMConfigResponse(BaseModel):
+    """Response model for LLM configuration retrieval."""
+    active_provider: LLMProvider = Field(..., description="Currently active provider")
+    active_model: str = Field(..., description="Currently active model name")
+    providers: Dict[LLMProvider, LLMProviderSettings] = Field(..., description="All configured providers")
+    models: Dict[str, LLMModelConfig] = Field(..., description="All configured models")
+
+
+class LLMConfigUpdateRequest(BaseModel):
+    """Request model for updating LLM configuration."""
+    provider: Optional[LLMProvider] = Field(None, description="Provider to update")
+    model_name: Optional[str] = Field(None, description="Model to switch to")
+    settings: Optional[LLMProviderSettings] = Field(None, description="Updated provider settings")
+    llm_model_config: Optional[LLMModelConfig] = Field(None, description="Updated model configuration")
+
+
+class LLMTestRequest(BaseModel):
+    """Request model for LLM testing."""
+    prompt: str = Field(..., description="Test prompt to send to LLM")
+    model_name: Optional[str] = Field(None, description="Specific model to test (default: active)")
+    max_tokens: int = Field(100, description="Maximum tokens in response")
+
+
+class LLMTestResponse(BaseModel):
+    """Response model for LLM testing."""
+    model_name: str = Field(..., description="Model that was tested")
+    provider: LLMProvider = Field(..., description="Provider used for testing")
+    prompt: str = Field(..., description="Original test prompt")
+    response: str = Field(..., description="LLM response")
+    tokens_used: int = Field(..., description="Number of tokens consumed")
+    response_time_ms: float = Field(..., description="Response time in milliseconds")
+    success: bool = Field(..., description="Whether the test was successful")
+
+
+class LLMProvidersListResponse(BaseModel):
+    """Response model for listing available LLM providers."""
+    providers: List[LLMProvider] = Field(..., description="List of available providers")
+    active_provider: LLMProvider = Field(..., description="Currently active provider")
+
+
+class LLMModelsListResponse(BaseModel):
+    """Response model for listing available LLM models."""
+    models: List[str] = Field(..., description="List of available model names")
+    active_model: str = Field(..., description="Currently active model")
+    models_by_provider: Dict[LLMProvider, List[str]] = Field(..., description="Models grouped by provider")
+
+
+# Additional LLM Management DTOs
+class LocalModelInfo(BaseModel):
+    """Information about a local model."""
+    model_name: str = Field(..., description="Name of the model")
+    size_gb: float = Field(..., description="Model size in GB")
+    loaded: bool = Field(..., description="Whether the model is currently loaded")
+    context_window: int = Field(..., description="Maximum context window")
+    max_tokens: int = Field(..., description="Maximum output tokens")
+    last_used: Optional[datetime] = Field(None, description="Last usage timestamp")
+
+
+class LoadModelRequest(BaseModel):
+    """Request to load a local model."""
+    model_name: str = Field(..., description="Name of the model to load")
+
+
+class UnloadModelRequest(BaseModel):
+    """Request to unload a local model."""
+    model_name: str = Field(..., description="Name of the model to unload")
+
+
+class LocalModelsListResponse(BaseModel):
+    """Response for listing available local models."""
+    models: List[LocalModelInfo] = Field(..., description="List of local models with info")
+    loaded_models: List[str] = Field(..., description="Names of currently loaded models")
+
+
+class OpenRouterModelsListResponse(BaseModel):
+    """Response for listing OpenRouter models."""
+    models: List[str] = Field(..., description="List of available models")
+    total: int = Field(..., description="Total number of models")
+
+
+class OpenRouterCallRequest(BaseModel):
+    """Request for making an OpenRouter API call."""
+    model: str = Field(..., description="Model to use for the call")
+    prompt: str = Field(..., description="Input prompt")
+    max_tokens: int = Field(100, description="Maximum tokens in response")
+    temperature: float = Field(0.7, description="Sampling temperature")
+
+
+class OpenRouterCallResponse(BaseModel):
+    """Response from OpenRouter API call."""
+    model: str = Field(..., description="Model used")
+    response: str = Field(..., description="Generated response")
+    tokens_used: int = Field(..., description="Tokens consumed")
+    cost: float = Field(..., description="Estimated cost in USD")
+    response_time_ms: float = Field(..., description="Response time")
+
+
+class OpenRouterStatusResponse(BaseModel):
+    """Status of OpenRouter API connectivity."""
+    connected: bool = Field(..., description="Whether API is reachable")
+    credits_remaining: Optional[float] = Field(None, description="Remaining credits")
+    rate_limit_remaining: Optional[int] = Field(None, description="Rate limit remaining")
+    error_message: Optional[str] = Field(None, description="Error if any")
+
+
+class PerformanceMetrics(BaseModel):
+    """Performance metrics for LLM operations."""
+    total_requests: int = Field(..., description="Total number of requests")
+    successful_requests: int = Field(..., description="Number of successful requests")
+    failed_requests: int = Field(..., description="Number of failed requests")
+    average_response_time_ms: float = Field(..., description="Average response time")
+    total_tokens_used: int = Field(..., description="Total tokens consumed")
+    error_rate: float = Field(..., description="Error rate percentage")
+    uptime_percentage: float = Field(..., description="Uptime percentage")
+
+
+class PerformanceReportResponse(BaseModel):
+    """Performance monitoring report."""
+    provider: LLMProvider = Field(..., description="Provider metrics")
+    metrics: PerformanceMetrics = Field(..., description="Performance metrics")
+    time_range: str = Field(..., description="Time range for the report")
+    generated_at: datetime = Field(default_factory=datetime.utcnow, description="Report generation time")

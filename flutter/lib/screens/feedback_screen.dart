@@ -140,10 +140,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                         border: OutlineInputBorder(),
                       ),
                       items: _feedbackTypes.map((type) {
-                        return DropdownMenuItem(
-                          value: type,
-                          child: Text(type),
-                        );
+                        return DropdownMenuItem(value: type, child: Text(type));
                       }).toList(),
                       onChanged: (value) {
                         setState(() {
@@ -172,7 +169,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                       controller: _descriptionController,
                       decoration: const InputDecoration(
                         labelText: 'Description',
-                        hintText: 'Please describe the issue and your suggested correction',
+                        hintText:
+                            'Please describe the issue and your suggested correction',
                         border: OutlineInputBorder(),
                       ),
                       maxLines: 5,
@@ -205,7 +203,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                           : ElevatedButton(
                               onPressed: _submitFeedback,
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                               ),
                               child: const Text('Submit Feedback'),
                             ),

@@ -63,25 +63,16 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.upload_file,
-                size: 80,
-                color: Colors.blue,
-              ),
+              const Icon(Icons.upload_file, size: 80, color: Colors.blue),
               const SizedBox(height: 24),
               const Text(
                 'Select a Script Document',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               const Text(
                 'Supported formats: PDF, DOC, DOCX, TXT',
-                style: TextStyle(
-                  color: Colors.grey,
-                ),
+                style: TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 32),
               if (_selectedFileName != null)

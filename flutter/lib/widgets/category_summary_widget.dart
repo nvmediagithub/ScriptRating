@@ -19,46 +19,43 @@ class CategorySummaryWidget extends StatelessWidget {
                 SizedBox(width: 8),
                 Text(
                   'Category Summary',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            ...categories.entries.map((entry) => Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            entry.key,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+            ...categories.entries.map(
+              (entry) => Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          entry.key,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
-                        Text(
-                          '${(entry.value * 100).round()}%',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: _getScoreColor(entry.value),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      value: entry.value,
-                      backgroundColor: Colors.grey.shade200,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        _getScoreColor(entry.value),
                       ),
+                      Text(
+                        '${(entry.value * 100).round()}%',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: _getScoreColor(entry.value),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(
+                    value: entry.value,
+                    backgroundColor: Colors.grey.shade200,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      _getScoreColor(entry.value),
                     ),
-                    const SizedBox(height: 12),
-                  ],
-                )),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(12),
@@ -69,11 +66,7 @@ class CategorySummaryWidget extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.info_outline,
-                    color: Colors.blue,
-                    size: 16,
-                  ),
+                  const Icon(Icons.info_outline, color: Colors.blue, size: 16),
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(

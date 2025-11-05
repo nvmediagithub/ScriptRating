@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import '../services/api_service.dart';
+import '../services/llm_service.dart';
 import '../core/dio_client.dart';
 
 final locator = GetIt.instance;
@@ -11,4 +12,7 @@ void setupLocator() {
 
   // Register ApiService
   locator.registerLazySingleton<ApiService>(() => ApiService(locator<Dio>()));
+
+  // Register LLM service
+  locator.registerLazySingleton<LlmService>(() => LlmService(locator<Dio>()));
 }

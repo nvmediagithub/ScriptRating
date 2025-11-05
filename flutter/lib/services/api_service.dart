@@ -6,7 +6,8 @@ class ApiService {
   final Dio _dio;
 
   ApiService(this._dio) {
-    _dio.options.baseUrl = 'http://localhost:8000/api/v1'; // Adjust based on your backend URL
+    _dio.options.baseUrl =
+        'http://localhost:8000/api/v1'; // Adjust based on your backend URL
     _dio.options.connectTimeout = const Duration(seconds: 30);
     _dio.options.receiveTimeout = const Duration(seconds: 30);
     // Add headers for CORS preflight
@@ -25,13 +26,18 @@ class ApiService {
   Future<List<Script>> getScripts() async {
     try {
       final response = await _dio.get('/scripts');
-      return (response.data as List).map((json) => Script.fromJson(json)).toList();
+      return (response.data as List)
+          .map((json) => Script.fromJson(json))
+          .toList();
     } catch (e) {
       throw Exception('Failed to load scripts: $e');
     }
   }
 
-  Future<Map<String, dynamic>> uploadDocument(String filename, dynamic file) async {
+  Future<Map<String, dynamic>> uploadDocument(
+    String filename,
+    dynamic file,
+  ) async {
     try {
       final formData = FormData.fromMap({
         'file': MultipartFile.fromBytes(file, filename: filename),
@@ -45,9 +51,10 @@ class ApiService {
 
   Future<AnalysisResult> analyzeScript(String documentId) async {
     try {
-      final response = await _dio.post('/analysis/analyze', data: {
-        'document_id': documentId,
-      });
+      final response = await _dio.post(
+        '/analysis/analyze',
+        data: {'document_id': documentId},
+      );
       return AnalysisResult.fromJson(response.data);
     } catch (e) {
       throw Exception('Failed to analyze script: $e');

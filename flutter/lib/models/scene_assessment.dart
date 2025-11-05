@@ -22,6 +22,7 @@ class SceneAssessment {
     this.justification,
   });
 
-  factory SceneAssessment.fromJson(Map<String, dynamic> json) => _$SceneAssessmentFromJson(json);
+  factory SceneAssessment.fromJson(Map<String, dynamic> json) =>
+      _$SceneAssessmentFromJson(json);
   Map<String, dynamic> toJson() => _$SceneAssessmentToJson(this);
 }

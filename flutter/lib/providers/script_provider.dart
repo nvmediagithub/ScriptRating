@@ -9,16 +9,21 @@ final apiServiceProvider = Provider<ApiService>((ref) {
 });
 
 // Provider for scripts list
-final scriptsProvider = StateNotifierProvider<ScriptsNotifier, AsyncValue<List<Script>>>((ref) {
-  final apiService = ref.watch(apiServiceProvider);
-  return ScriptsNotifier(apiService);
-});
+final scriptsProvider =
+    StateNotifierProvider<ScriptsNotifier, AsyncValue<List<Script>>>((ref) {
+      final apiService = ref.watch(apiServiceProvider);
+      return ScriptsNotifier(apiService);
+    });
 
 // Provider for current script
-final scriptProvider = StateNotifierProvider.family<ScriptNotifier, AsyncValue<Script?>, String>((ref, scriptId) {
-  final apiService = ref.watch(apiServiceProvider);
-  return ScriptNotifier(apiService, scriptId);
-});
+final scriptProvider =
+    StateNotifierProvider.family<ScriptNotifier, AsyncValue<Script?>, String>((
+      ref,
+      scriptId,
+    ) {
+      final apiService = ref.watch(apiServiceProvider);
+      return ScriptNotifier(apiService, scriptId);
+    });
 
 class ScriptsNotifier extends StateNotifier<AsyncValue<List<Script>>> {
   final ApiService _apiService;
@@ -46,7 +51,8 @@ class ScriptNotifier extends StateNotifier<AsyncValue<Script?>> {
   final ApiService _apiService;
   final String _scriptId;
 
-  ScriptNotifier(this._apiService, this._scriptId) : super(const AsyncValue.loading()) {
+  ScriptNotifier(this._apiService, this._scriptId)
+    : super(const AsyncValue.loading()) {
     loadScript();
   }
 

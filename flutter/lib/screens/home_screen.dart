@@ -16,6 +16,11 @@ class HomeScreen extends ConsumerWidget {
         title: const Text('Script Rating App'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.smart_toy_outlined),
+            tooltip: 'LLM control center',
+            onPressed: () => context.go('/llm'),
+          ),
+          IconButton(
             icon: const Icon(Icons.history),
             onPressed: () => context.go('/history'),
           ),
@@ -31,11 +36,7 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red,
-              ),
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
               const SizedBox(height: 16),
               const Text(
                 'Error loading scripts',
@@ -69,10 +70,7 @@ class HomeScreen extends ConsumerWidget {
                     const SizedBox(height: 16),
                     const Text(
                       'No scripts available',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
                     ),
                     const SizedBox(height: 8),
                     const Text(

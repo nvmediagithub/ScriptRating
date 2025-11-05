@@ -24,6 +24,7 @@ class AnalysisResult {
     this.recommendations,
   });
 
-  factory AnalysisResult.fromJson(Map<String, dynamic> json) => _$AnalysisResultFromJson(json);
+  factory AnalysisResult.fromJson(Map<String, dynamic> json) =>
+      _$AnalysisResultFromJson(json);
   Map<String, dynamic> toJson() => _$AnalysisResultToJson(this);
 }

@@ -16,6 +16,7 @@ from app.presentation.api.routes.reports import router as reports_router
 from app.presentation.api.routes.feedback import router as feedback_router
 from app.presentation.api.routes.history import router as history_router
 from app.presentation.api.routes.rag import router as rag_router
+from app.presentation.api.routes.llm import router as llm_router
 
 
 def create_app() -> FastAPI:
@@ -55,6 +56,7 @@ def create_app() -> FastAPI:
     app.include_router(feedback_router, prefix="/api/v1/feedback", tags=["Feedback"])
     app.include_router(history_router, prefix="/api/v1/history", tags=["History"])
     app.include_router(rag_router, prefix="/api/v1/rag", tags=["RAG"])
+    app.include_router(llm_router, prefix="/api/v1/llm", tags=["LLM"])
 
     @app.on_event("startup")
     async def startup_event():

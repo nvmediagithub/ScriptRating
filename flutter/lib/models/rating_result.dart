@@ -19,6 +19,7 @@ class RatingResult {
     required this.categoriesSummary,
   });
 
-  factory RatingResult.fromJson(Map<String, dynamic> json) => _$RatingResultFromJson(json);
+  factory RatingResult.fromJson(Map<String, dynamic> json) =>
+      _$RatingResultFromJson(json);
   Map<String, dynamic> toJson() => _$RatingResultToJson(this);
 }

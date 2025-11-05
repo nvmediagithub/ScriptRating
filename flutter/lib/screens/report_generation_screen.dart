@@ -58,7 +58,9 @@ class _ReportGenerationScreenState extends State<ReportGenerationScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Report generated successfully in $_selectedFormat format!'),
+          content: Text(
+            'Report generated successfully in $_selectedFormat format!',
+          ),
           action: SnackBarAction(
             label: 'Download',
             onPressed: () {
@@ -95,10 +97,7 @@ class _ReportGenerationScreenState extends State<ReportGenerationScreen> {
           children: [
             const Text(
               'Choose Report Format',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -106,49 +105,49 @@ class _ReportGenerationScreenState extends State<ReportGenerationScreen> {
               style: TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 24),
-            ..._formats.map((format) => Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: RadioListTile<String>(
-                    title: Row(
-                      children: [
-                        Icon(
-                          format['icon'],
-                          color: format['color'],
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                format['name'],
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
+            ..._formats.map(
+              (format) => Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: RadioListTile<String>(
+                  title: Row(
+                    children: [
+                      Icon(format['icon'], color: format['color']),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              format['name'],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                format['description'],
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              format['description'],
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    value: format['name'],
-                    groupValue: _selectedFormat,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedFormat = value!;
-                        _isGenerated = false; // Reset generated state when format changes
-                      });
-                    },
+                      ),
+                    ],
                   ),
-                )),
+                  value: format['name'],
+                  groupValue: _selectedFormat,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedFormat = value!;
+                      _isGenerated =
+                          false; // Reset generated state when format changes
+                    });
+                  },
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
             if (_error != null)
               Container(
@@ -158,10 +157,7 @@ class _ReportGenerationScreenState extends State<ReportGenerationScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.red.shade200),
                 ),
-                child: Text(
-                  _error!,
-                  style: const TextStyle(color: Colors.red),
-                ),
+                child: Text(_error!, style: const TextStyle(color: Colors.red)),
               ),
             const SizedBox(height: 16),
             SizedBox(
@@ -175,69 +171,74 @@ class _ReportGenerationScreenState extends State<ReportGenerationScreen> {
                       ],
                     )
                   : _isGenerated
-                      ? Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.green.shade200),
+                  ? Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.check_circle,
+                                color: Colors.green,
                               ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.check_circle,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Report generated in $_selectedFormat format',
+                                  style: const TextStyle(
                                     color: Colors.green,
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'Report generated in $_selectedFormat format',
-                                      style: const TextStyle(
-                                        color: Colors.green,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: () => setState(() => _isGenerated = false),
-                                    icon: const Icon(Icons.refresh),
-                                    label: const Text('Generate Another'),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed: () {
-                                      // Mock download
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Download would start here')),
-                                      );
-                                    },
-                                    icon: const Icon(Icons.download),
-                                    label: const Text('Download'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        )
-                      : ElevatedButton.icon(
-                          onPressed: _generateReport,
-                          icon: const Icon(Icons.file_download),
-                          label: Text('Generate $_selectedFormat Report'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            ],
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () =>
+                                    setState(() => _isGenerated = false),
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Generate Another'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  // Mock download
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Download would start here',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.download),
+                                label: const Text('Download'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  : ElevatedButton.icon(
+                      onPressed: _generateReport,
+                      icon: const Icon(Icons.file_download),
+                      label: Text('Generate $_selectedFormat Report'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
             ),
             const SizedBox(height: 16),
             Center(

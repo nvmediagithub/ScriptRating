@@ -17,18 +17,11 @@ class AnalysisResultWidget extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(
-                  Icons.analytics,
-                  size: 32,
-                  color: Colors.blue,
-                ),
+                const Icon(Icons.analytics, size: 32, color: Colors.blue),
                 const SizedBox(width: 12),
                 const Text(
                   'Analysis Results',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -108,7 +101,12 @@ class AnalysisResultWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
