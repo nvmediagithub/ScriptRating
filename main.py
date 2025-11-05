@@ -23,3 +23,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Create the FastAPI app instance for Uvicorn
+app = create_app()

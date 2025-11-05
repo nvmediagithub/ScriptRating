@@ -2,22 +2,33 @@
 Scripts API routes.
 
 This module provides endpoints for script-related operations.
-Placeholder implementation for future development.
 """
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from app.adapters.controllers.script_controller import ScriptController
+from app.infrastructure.repositories.in_memory_script_repository import InMemoryScriptRepository
+from app.use_cases.scripts.get_all_scripts import GetAllScriptsUseCase
+from app.use_cases.scripts.get_script import GetScriptUseCase
 
 router = APIRouter()
 
+def get_script_controller() -> ScriptController:
+    """Dependency injection for ScriptController."""
+    repository = InMemoryScriptRepository()
+    get_script_use_case = GetScriptUseCase(repository)
+    get_all_scripts_use_case = GetAllScriptsUseCase(repository)
+    return ScriptController(get_script_use_case, get_all_scripts_use_case)
+
 
 @router.get("/scripts")
-async def get_scripts():
+async def get_scripts(controller: ScriptController = Depends(get_script_controller)):
     """
     Get all scripts.
 
     Returns:
-        dict: Placeholder response for scripts listing.
+        List[dict]: List of script dictionaries.
     """
-    return {"scripts": [], "message": "Scripts endpoint - implementation pending"}
+    return await controller.get_all_scripts()
 
 
 @router.post("/scripts")

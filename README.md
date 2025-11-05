@@ -144,89 +144,346 @@ For detailed architectural documentation, see:
 - [`docs/diagrams/overall_data_flow.md`](docs/diagrams/overall_data_flow.md) - System data flow
 - [`docs/diagrams/rag_pipeline.md`](docs/diagrams/rag_pipeline.md) - RAG integration details
 
-## 🚀 Installation and Setup
+## 🚀 Getting Started
+
+This comprehensive guide will help you set up and run the ScriptRating system. The application consists of a FastAPI backend for script analysis and a Flutter frontend for user interaction.
 
 ### Prerequisites
-- **Python 3.10+** with PyTorch support (CUDA recommended for GPU acceleration)
-- **Flutter SDK 3.19+** for cross-platform UI compilation
-- **Redis** (optional, for background task queuing with Celery)
-- **Vector Database**: FAISS (CPU) or Qdrant (recommended for metadata filtering)
 
-### Backend Setup
+#### System Requirements
+- **Operating System**: Windows 10+, macOS 10.15+, or Linux (Ubuntu 18.04+)
+- **CPU**: Intel/AMD x64 or ARM64 processor (GPU recommended for better performance)
+- **RAM**: Minimum 8GB (16GB+ recommended for large script analysis)
+- **Storage**: 10GB+ free space for models and data
 
-1. **Clone and Install Dependencies**
-   ```bash
-   git clone <repository-url>
-   cd script-rating
-   pip install -r requirements.txt
-   ```
+#### Backend Prerequisites
+- **Python**: 3.9 or higher (3.11 recommended)
+- **Git**: For cloning the repository
+- **PostgreSQL** (optional): For production database (SQLite used by default for development)
+- **Redis** (optional): For background task queuing
 
-2. **Download Models**
-   ```bash
-   # LLM Models (quantized for offline use)
-   python scripts/download_models.py --llm llama-2-13b-chat-q4
-   python scripts/download_models.py --embeddings multilingual-e5-large
+#### Frontend Prerequisites
+- **Flutter SDK**: 3.9.2 or higher
+- **Dart**: Included with Flutter SDK
+- **Android Studio** (for Android development, optional)
+- **Xcode** (for iOS development on macOS, optional)
 
-   # Local classifiers (fallback for CPU-only operation)
-   python scripts/download_models.py --classifier rubert-base-multilabel
-   ```
+#### Development Tools
+- **VS Code** or preferred IDE with Python and Dart extensions
+- **Docker** and **Docker Compose** (optional, for containerized deployment)
 
-3. **Initialize RAG Corpus**
-   ```bash
-   # Process legal documents and examples
-   python scripts/build_rag_corpus.py --source data/legal_docs/ --output vectorstore/
+### Quick Start
 
-   # Validate corpus
-   python scripts/validate_corpus.py --path vectorstore/
-   ```
+#### Option 1: Full Development Environment (Recommended)
+```bash
+# Clone repository and setup complete environment
+git clone <repository-url>
+cd script-rating
+make full-setup
 
-4. **Database Setup**
-   ```bash
-   # Initialize SQLite database
-   python scripts/init_database.py
-   ```
-
-### Frontend Setup
-
-1. **Flutter Installation**
-   ```bash
-   flutter doctor  # Verify installation
-   flutter pub get  # Install dependencies
-   ```
-
-2. **Build for Target Platform**
-   ```bash
-   # Web deployment
-   flutter build web --release
-
-   # Desktop (Windows/macOS/Linux)
-   flutter build windows --release
-
-   # Mobile (iOS/Android)
-   flutter build apk --release
-   ```
-
-### Configuration
-Create `config.yaml`:
-```yaml
-backend:
-  host: localhost
-  port: 8000
-  models_path: ./models
-  vectorstore_path: ./vectorstore
-
-rag:
-  vector_db: qdrant  # or faiss
-  embedding_model: intfloat/multilingual-e5-large
-  corpus_sources:
-    - data/fz436/
-    - data/guidelines/
-    - data/examples/
-
-ui:
-  theme: material3
-  default_language: ru
+# Start both backend and frontend
+make dev
 ```
+
+#### Option 2: Manual Setup
+
+**Backend Setup:**
+```bash
+# Install Python dependencies
+pip install -e .[dev]
+
+# Copy environment configuration
+cp .env.example .env
+
+# Run database migrations (if using PostgreSQL)
+alembic upgrade head
+
+# Start development server
+uvicorn app.presentation.api.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Frontend Setup:**
+```bash
+# Install Flutter dependencies
+cd flutter
+flutter pub get
+
+# Run development server
+flutter run -d chrome  # or flutter run for native app
+```
+
+### Detailed Setup Instructions
+
+#### Backend Configuration
+
+1. **Environment Variables**
+   Copy `.env.example` to `.env` and configure:
+   ```bash
+   cp .env.example .env
+   ```
+
+   Key settings to review:
+   - `DATABASE_URL`: Database connection string
+   - `DEBUG`: Set to `False` for production
+   - `API_HOST` and `API_PORT`: Server binding
+   - `CORS_ORIGINS`: Allowed frontend origins
+
+2. **Database Setup**
+   - **SQLite (Development)**: No additional setup required
+   - **PostgreSQL (Production)**:
+     ```bash
+     # Install PostgreSQL and create database
+     createdb script_rating
+
+     # Update .env with PostgreSQL connection
+     DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/script_rating
+
+     # Run migrations
+     alembic upgrade head
+     ```
+
+#### Frontend Configuration
+
+1. **Flutter Setup**
+   ```bash
+   # Verify Flutter installation
+   flutter doctor
+
+   # Install dependencies
+   cd flutter && flutter pub get
+
+   # Generate code (for JSON serialization)
+   flutter pub run build_runner build
+   ```
+
+2. **Platform-Specific Setup**
+
+   **Web Deployment:**
+   ```bash
+   flutter build web --release
+   # Serve with any static file server
+   ```
+
+   **Desktop (Windows/macOS/Linux):**
+   ```bash
+   flutter build windows --release  # or macos/linux
+   ```
+
+   **Mobile (Android/iOS):**
+   ```bash
+   # Android
+   flutter build apk --release
+
+   # iOS (macOS only)
+   flutter build ios --release
+   ```
+
+### Run Modes
+
+#### Development Mode
+Run both services simultaneously with hot reload:
+```bash
+make dev
+```
+- Backend: http://localhost:8000 (with auto-reload)
+- Frontend: Opens in browser/native window
+- Full debugging capabilities enabled
+
+#### Production Mode
+
+**Docker Deployment:**
+```bash
+# Build and run with Docker Compose
+docker-compose up --build -d
+```
+
+**Manual Production:**
+```bash
+# Backend (production)
+export DEBUG=False
+uvicorn app.presentation.api.main:app --host 0.0.0.0 --port 8000 --workers 4
+
+# Frontend (serve built files)
+cd flutter/build/web && python -m http.server 8080
+```
+
+#### Individual Services
+
+**Backend Only:**
+```bash
+make run-backend
+# Or: uvicorn app.presentation.api.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Frontend Only:**
+```bash
+make run-frontend
+# Or: cd flutter && flutter run
+```
+
+**Database Only (with Docker):**
+```bash
+docker-compose up db -d
+```
+
+### Testing
+
+#### Backend Testing
+```bash
+# Run all tests
+make test-backend
+# Or: pytest tests/ -v
+
+# Run with coverage
+pytest tests/ --cov=app --cov-report=html
+
+# Run specific test file
+pytest tests/test_analysis.py -v
+```
+
+#### Frontend Testing
+```bash
+# Run unit tests
+make test-frontend
+# Or: cd flutter && flutter test
+
+# Run integration tests
+cd flutter && flutter test integration_test/
+```
+
+### Code Quality
+
+#### Backend Code Quality
+```bash
+# Lint code
+make lint-backend
+# Or: flake8 app/ tests/ && mypy app/
+
+# Format code
+make format-backend
+# Or: black app/ tests/ && isort app/ tests/
+
+# Run all quality checks
+make lint-backend && make test-backend
+```
+
+#### Frontend Code Quality
+```bash
+# Analyze code
+make analyze-frontend
+# Or: cd flutter && flutter analyze
+
+# Format code
+make format-frontend
+# Or: cd flutter && dart format .
+
+# Run all quality checks
+cd flutter && flutter analyze && flutter test
+```
+
+### Troubleshooting
+
+#### Common Backend Issues
+
+**Port Already in Use:**
+```bash
+# Find process using port 8000
+netstat -tulpn | grep :8000
+# Kill the process or change port in .env
+```
+
+**Database Connection Failed:**
+- Verify DATABASE_URL in .env
+- Ensure PostgreSQL is running: `pg_isready -h localhost -p 5432`
+- Check database exists: `psql -l`
+
+**Import Errors:**
+```bash
+# Reinstall dependencies
+pip install -e .[dev] --force-reinstall
+```
+
+**Model Download Issues:**
+- Check internet connection
+- Verify Hugging Face access (if using external models)
+- Use local models for offline operation
+
+#### Common Frontend Issues
+
+**Flutter Doctor Issues:**
+```bash
+flutter doctor --android-licenses  # Android setup
+flutter doctor --ios-licenses      # iOS setup
+```
+
+**Build Failures:**
+```bash
+# Clean and rebuild
+cd flutter && flutter clean && flutter pub get && flutter build
+```
+
+**Hot Reload Not Working:**
+- Restart development server
+- Check for syntax errors in console
+- Clear IDE cache
+
+#### Docker Issues
+
+**Container Won't Start:**
+```bash
+# Check logs
+docker-compose logs backend
+
+# Rebuild without cache
+docker-compose build --no-cache
+```
+
+**Permission Denied:**
+```bash
+# Fix file permissions
+sudo chown -R $USER:$USER .
+```
+
+**Port Conflicts:**
+```bash
+# Change ports in docker-compose.yml
+# Or stop conflicting services
+```
+
+#### Performance Issues
+
+**Slow Analysis:**
+- Enable GPU acceleration (CUDA for PyTorch)
+- Use smaller models for testing
+- Increase RAM allocation
+
+**UI Freezes:**
+- Check for infinite loops in state management
+- Monitor memory usage
+- Enable Flutter DevTools
+
+#### Getting Help
+
+1. **Check Documentation:**
+   - [`docs/README.md`](docs/README.md) - Complete technical documentation
+   - Individual module docs in [`docs/modules/`](docs/modules/)
+
+2. **Debug Mode:**
+   - Enable DEBUG=True in .env
+   - Check application logs
+   - Use browser DevTools for frontend
+
+3. **Community Support:**
+   - Create GitHub issue with full error logs
+   - Include system information and reproduction steps
+
+### Next Steps
+
+Once everything is running:
+1. Visit http://localhost:8000/docs for API documentation
+2. Upload a sample script (PDF/DOCX) for testing
+3. Review analysis results and provide feedback
+4. Check [`docs/architecture.md`](docs/architecture.md) for advanced configuration
 
 ## 📖 Usage Guide
 

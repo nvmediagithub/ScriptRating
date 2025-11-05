@@ -1,7 +1,7 @@
 import os
 from typing import List
 
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -18,7 +18,16 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./script_rating.db"
 
     # CORS settings
-    cors_origins: List[str] = ["http://localhost:3000", "http://localhost:8080"]
+    cors_origins: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:5000",
+        "http://localhost:8080",
+        "http://localhost:4000",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5000",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:4000",
+    ]
 
     # Logging
     log_level: str = "INFO"
