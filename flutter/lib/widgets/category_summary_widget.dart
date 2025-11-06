@@ -18,7 +18,7 @@ class CategorySummaryWidget extends StatelessWidget {
                 Icon(Icons.category, color: Colors.blue),
                 SizedBox(width: 8),
                 Text(
-                  'Category Summary',
+                  'Категории содержания',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -70,7 +70,7 @@ class CategorySummaryWidget extends StatelessWidget {
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(
-                      'Higher scores indicate stronger presence of the category in the script. Categories above 60% may affect the overall rating.',
+                      'Чем выше показатель, тем заметнее проявление категории в сценарии. Значения выше 60% обычно повышают возрастной рейтинг.',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.blue,

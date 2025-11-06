@@ -1,16 +1,16 @@
 import 'package:dio/dio.dart';
-import '../models/script.dart';
 import '../models/analysis_result.dart';
+import '../models/analysis_status.dart';
+import '../models/document_type.dart';
+import '../models/script.dart';
 
 class ApiService {
   final Dio _dio;
 
   ApiService(this._dio) {
-    _dio.options.baseUrl =
-        'http://localhost:8000/api/v1'; // Adjust based on your backend URL
+    _dio.options.baseUrl = 'http://localhost:8000/api/v1';
     _dio.options.connectTimeout = const Duration(seconds: 30);
     _dio.options.receiveTimeout = const Duration(seconds: 30);
-    // Add headers for CORS preflight
     _dio.options.headers['Content-Type'] = 'application/json';
   }
 
@@ -36,37 +36,60 @@ class ApiService {
 
   Future<Map<String, dynamic>> uploadDocument(
     String filename,
-    dynamic file,
-  ) async {
+    List<int> bytes, {
+    DocumentType documentType = DocumentType.script,
+  }) async {
     try {
       final formData = FormData.fromMap({
-        'file': MultipartFile.fromBytes(file, filename: filename),
+        'file': MultipartFile.fromBytes(bytes, filename: filename),
+        'filename': filename,
+        'document_type': documentType.value,
       });
-      final response = await _dio.post('/documents/upload', data: formData);
-      return response.data;
+      final response =
+          await _dio.post('/documents/upload', data: formData);
+      return response.data as Map<String, dynamic>;
     } catch (e) {
       throw Exception('Failed to upload document: $e');
     }
   }
 
-  Future<AnalysisResult> analyzeScript(String documentId) async {
+  Future<AnalysisResult> analyzeScript(
+    String documentId, {
+    String? criteriaDocumentId,
+    String? targetRating,
+  }) async {
     try {
-      final response = await _dio.post(
-        '/analysis/analyze',
-        data: {'document_id': documentId},
-      );
+      final payload = {
+        'document_id': documentId,
+        'criteria_document_id': criteriaDocumentId,
+        'options': {
+          if (targetRating != null) 'target_rating': targetRating,
+          'include_recommendations': true,
+          'detailed_scenes': true,
+        },
+      };
+      final response = await _dio.post('/analysis/analyze', data: payload);
       return AnalysisResult.fromJson(response.data);
     } catch (e) {
-      throw Exception('Failed to analyze script: $e');
+      throw Exception('Failed to start analysis: $e');
     }
   }
 
-  Future<Map<String, dynamic>> getAnalysisStatus(String analysisId) async {
+  Future<AnalysisStatus> getAnalysisStatus(String analysisId) async {
     try {
       final response = await _dio.get('/analysis/status/$analysisId');
-      return response.data;
+      return AnalysisStatus.fromJson(response.data);
     } catch (e) {
       throw Exception('Failed to get analysis status: $e');
+    }
+  }
+
+  Future<AnalysisResult> getAnalysisResult(String analysisId) async {
+    try {
+      final response = await _dio.get('/analysis/$analysisId');
+      return AnalysisResult.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to load analysis result: $e');
     }
   }
 }

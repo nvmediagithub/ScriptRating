@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/analysis_result.dart';
+import '../models/severity.dart';
 
 class AnalysisResultWidget extends StatelessWidget {
   final AnalysisResult result;
@@ -20,8 +21,8 @@ class AnalysisResultWidget extends StatelessWidget {
                 const Icon(Icons.analytics, size: 32, color: Colors.blue),
                 const SizedBox(width: 12),
                 const Text(
-                  'Analysis Results',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  'Итоги оценки',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -36,7 +37,7 @@ class AnalysisResultWidget extends StatelessWidget {
               child: Column(
                 children: [
                   const Text(
-                    'Overall Rating',
+                    'Итоговый возрастной рейтинг',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.blue,
@@ -44,13 +45,28 @@ class AnalysisResultWidget extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    result.ratingResult.finalRating.name.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        result.ratingResult.finalRating.value,
+                        style: const TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      if (result.ratingResult.targetRating != null) ...[
+                        const SizedBox(width: 12),
+                        Text(
+                          '(целевой: ${result.ratingResult.targetRating!.value})',
+                          style: const TextStyle(
+                            color: Colors.blueGrey,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -59,7 +75,7 @@ class AnalysisResultWidget extends StatelessWidget {
                       const Icon(Icons.verified, color: Colors.green, size: 16),
                       const SizedBox(width: 4),
                       Text(
-                        '${(result.ratingResult.confidenceScore * 100).round()}% Confidence',
+                        'Уверенность ${(result.ratingResult.confidenceScore * 100).round()}%',
                         style: const TextStyle(
                           color: Colors.green,
                           fontWeight: FontWeight.w500,
@@ -75,7 +91,7 @@ class AnalysisResultWidget extends StatelessWidget {
               children: [
                 Expanded(
                   child: _buildStatCard(
-                    'Scenes Analyzed',
+                    'Блоков анализировано',
                     result.sceneAssessments.length.toString(),
                     Icons.movie,
                     Colors.purple,
@@ -84,9 +100,12 @@ class AnalysisResultWidget extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildStatCard(
-                    'Flagged Scenes',
+                    'Проблемных блоков',
                     result.sceneAssessments
-                        .where((scene) => scene.flaggedContent.isNotEmpty)
+                        .where(
+                          (scene) => scene.categories.values
+                              .any((severity) => severity != Severity.none),
+                        )
                         .length
                         .toString(),
                     Icons.warning,

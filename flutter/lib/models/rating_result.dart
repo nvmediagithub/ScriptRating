@@ -5,15 +5,17 @@ import 'age_rating.dart';
 
 part 'rating_result.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class RatingResult {
   final AgeRating finalRating;
+  final AgeRating? targetRating;
   final double confidenceScore;
   final int problemScenesCount;
   final Map<Category, Severity> categoriesSummary;
 
   RatingResult({
     required this.finalRating,
+    this.targetRating,
     required this.confidenceScore,
     required this.problemScenesCount,
     required this.categoriesSummary,

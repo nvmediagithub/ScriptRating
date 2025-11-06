@@ -41,11 +41,27 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/analysis',
-      builder: (context, state) => const AnalysisScreen(),
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        if (extra == null || !extra.containsKey('analysisId')) {
+          return const Scaffold(
+            body: Center(child: Text('Не передан идентификатор анализа')),
+          );
+        }
+        return AnalysisScreen(
+          analysisId: extra['analysisId'] as String,
+          documentId: (extra['documentId'] as String?) ?? '',
+          criteriaDocumentId: extra['criteriaDocumentId'] as String?,
+        );
+      },
     ),
     GoRoute(
       path: '/results',
-      builder: (context, state) => const ResultsScreen(),
+      builder: (context, state) {
+        final analysisId =
+            (state.extra as Map<String, dynamic>?)?['analysisId'] as String?;
+        return ResultsScreen(analysisId: analysisId);
+      },
     ),
     GoRoute(
       path: '/history',

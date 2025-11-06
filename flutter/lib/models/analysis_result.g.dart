@@ -8,16 +8,15 @@ part of 'analysis_result.dart';
 
 AnalysisResult _$AnalysisResultFromJson(Map<String, dynamic> json) =>
     AnalysisResult(
-      analysisId: json['analysisId'] as String,
-      documentId: json['documentId'] as String,
+      analysisId: json['analysis_id'] as String,
+      documentId: json['document_id'] as String,
       status: json['status'] as String,
-      ratingResult: RatingResult.fromJson(
-        json['ratingResult'] as Map<String, dynamic>,
-      ),
-      sceneAssessments: (json['sceneAssessments'] as List<dynamic>)
+      ratingResult:
+          RatingResult.fromJson(json['rating_result'] as Map<String, dynamic>),
+      sceneAssessments: (json['scene_assessments'] as List<dynamic>)
           .map((e) => SceneAssessment.fromJson(e as Map<String, dynamic>))
           .toList(),
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String),
       recommendations: (json['recommendations'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
@@ -25,11 +24,11 @@ AnalysisResult _$AnalysisResultFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$AnalysisResultToJson(AnalysisResult instance) =>
     <String, dynamic>{
-      'analysisId': instance.analysisId,
-      'documentId': instance.documentId,
+      'analysis_id': instance.analysisId,
+      'document_id': instance.documentId,
       'status': instance.status,
-      'ratingResult': instance.ratingResult,
-      'sceneAssessments': instance.sceneAssessments,
-      'createdAt': instance.createdAt.toIso8601String(),
+      'rating_result': instance.ratingResult,
+      'scene_assessments': instance.sceneAssessments,
+      'created_at': instance.createdAt.toIso8601String(),
       'recommendations': instance.recommendations,
     };

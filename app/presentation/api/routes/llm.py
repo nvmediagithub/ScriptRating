@@ -4,54 +4,65 @@ LLM configuration and management routes.
 This module provides endpoints for managing LLM providers, models, and configurations.
 """
 import asyncio
+import logging
 import random
 from datetime import datetime
-from fastapi import APIRouter, HTTPException
-from typing import Dict, List
+from typing import Dict, List, Optional
 
+from fastapi import APIRouter, HTTPException
+
+from app.infrastructure.services import openrouter_client
+from app.infrastructure.services.openrouter_client import (
+    OpenRouterAuthError,
+    OpenRouterConfigurationError,
+    OpenRouterError,
+)
 from app.presentation.api.schemas import (
-    LLMProvider,
-    LLMProviderSettings,
-    LLMModelConfig,
-    LLMStatusResponse,
     LLMConfigResponse,
     LLMConfigUpdateRequest,
+    LLMModelConfig,
+    LLMProvider,
+    LLMProviderSettings,
+    LLMModelsListResponse,
+    LLMProvidersListResponse,
+    LLMStatusResponse,
     LLMTestRequest,
     LLMTestResponse,
-    LLMProvidersListResponse,
-    LLMModelsListResponse,
     LocalModelInfo,
-    LoadModelRequest,
-    UnloadModelRequest,
     LocalModelsListResponse,
-    OpenRouterModelsListResponse,
+    LoadModelRequest,
     OpenRouterCallRequest,
     OpenRouterCallResponse,
+    OpenRouterModelsListResponse,
     OpenRouterStatusResponse,
     PerformanceMetrics,
     PerformanceReportResponse,
+    UnloadModelRequest,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+OPENROUTER_MAX_RETRIES = 3
 
-# Mock data for demonstration
-MOCK_PROVIDERS = {
+PROVIDER_SETTINGS: Dict[LLMProvider, LLMProviderSettings] = {
     LLMProvider.LOCAL: LLMProviderSettings(
         provider=LLMProvider.LOCAL,
         base_url="http://localhost:11434",
         timeout=30,
-        max_retries=3
+        max_retries=3,
     ),
     LLMProvider.OPENROUTER: LLMProviderSettings(
         provider=LLMProvider.OPENROUTER,
-        api_key="sk-or-v1-mock-key",
-        timeout=30,
-        max_retries=3
-    )
+        api_key="configured" if openrouter_client.has_api_key else None,
+        base_url=openrouter_client.base_url,
+        timeout=openrouter_client.timeout,
+        max_retries=OPENROUTER_MAX_RETRIES,
+    ),
 }
 
-MOCK_MODELS = {
+MOCK_MODELS: Dict[str, LLMModelConfig] = {
     "llama2:7b": LLMModelConfig(
         model_name="llama2:7b",
         provider=LLMProvider.LOCAL,
@@ -60,7 +71,7 @@ MOCK_MODELS = {
         temperature=0.7,
         top_p=0.9,
         frequency_penalty=0.0,
-        presence_penalty=0.0
+        presence_penalty=0.0,
     ),
     "mistral:7b": LLMModelConfig(
         model_name="mistral:7b",
@@ -70,29 +81,55 @@ MOCK_MODELS = {
         temperature=0.7,
         top_p=0.9,
         frequency_penalty=0.0,
-        presence_penalty=0.0
+        presence_penalty=0.0,
     ),
-    "gpt-3.5-turbo": LLMModelConfig(
-        model_name="gpt-3.5-turbo",
-        provider=LLMProvider.OPENROUTER,
-        context_window=4096,
-        max_tokens=2048,
-        temperature=0.7,
-        top_p=0.9,
-        frequency_penalty=0.0,
-        presence_penalty=0.0
-    ),
-    "claude-3-haiku": LLMModelConfig(
-        model_name="claude-3-haiku",
-        provider=LLMProvider.OPENROUTER,
-        context_window=4096,
-        max_tokens=2048,
-        temperature=0.7,
-        top_p=0.9,
-        frequency_penalty=0.0,
-        presence_penalty=0.0
-    )
 }
+
+
+def _update_provider_settings(settings_update: LLMProviderSettings) -> None:
+    """Persist provider settings and keep OpenRouter client in sync."""
+    provider = settings_update.provider
+
+    if provider == LLMProvider.OPENROUTER:
+        # Update client configuration
+        if settings_update.api_key is not None:
+            api_key = settings_update.api_key.strip() or None
+            openrouter_client.update_api_key(api_key)
+        # Allow updating base URL / timeout at runtime
+        if settings_update.base_url:
+            openrouter_client.base_url = settings_update.base_url.rstrip("/")
+        openrouter_client.timeout = settings_update.timeout
+
+        sanitized = LLMProviderSettings(
+            provider=LLMProvider.OPENROUTER,
+            api_key="configured" if openrouter_client.has_api_key else None,
+            base_url=openrouter_client.base_url,
+            timeout=openrouter_client.timeout,
+            max_retries=settings_update.max_retries or OPENROUTER_MAX_RETRIES,
+        )
+        PROVIDER_SETTINGS[provider] = sanitized
+        return
+
+    PROVIDER_SETTINGS[provider] = settings_update
+
+
+async def _model_available(model_name: str, provider: Optional[LLMProvider] = None) -> bool:
+    """Check whether a model is available either locally or via OpenRouter."""
+    if model_name in MOCK_MODELS:
+        return True
+
+    if provider and provider != LLMProvider.OPENROUTER:
+        return False
+
+    if not openrouter_client.has_api_key:
+        return False
+
+    try:
+        remote_models = await openrouter_client.list_models()
+    except OpenRouterError:
+        return False
+
+    return model_name in remote_models
 
 ACTIVE_PROVIDER = LLMProvider.LOCAL
 ACTIVE_MODEL = "llama2:7b"
@@ -157,7 +194,7 @@ async def get_llm_providers():
         LLMProvidersListResponse: List of providers and active provider.
     """
     return LLMProvidersListResponse(
-        providers=list(MOCK_PROVIDERS.keys()),
+        providers=list(PROVIDER_SETTINGS.keys()),
         active_provider=ACTIVE_PROVIDER
     )
 
@@ -170,17 +207,19 @@ async def get_llm_models():
     Returns:
         LLMModelsListResponse: List of models grouped by provider.
     """
-    models_by_provider = {}
-    for provider in LLMProvider:
-        models_by_provider[provider] = [
-            model_name for model_name, config in MOCK_MODELS.items()
-            if config.provider == provider
-        ]
+    config = await get_llm_config()
+
+    models_by_provider: Dict[LLMProvider, List[str]] = {provider: [] for provider in LLMProvider}
+    for model_name, model_config in config.models.items():
+        models_by_provider.setdefault(model_config.provider, []).append(model_name)
+
+    for model_list in models_by_provider.values():
+        model_list.sort()
 
     return LLMModelsListResponse(
-        models=list(MOCK_MODELS.keys()),
-        active_model=ACTIVE_MODEL,
-        models_by_provider=models_by_provider
+        models=list(config.models.keys()),
+        active_model=config.active_model,
+        models_by_provider=models_by_provider,
     )
 
 
@@ -192,11 +231,47 @@ async def get_llm_config():
     Returns:
         LLMConfigResponse: Current configuration including providers and models.
     """
+    dynamic_models: Dict[str, LLMModelConfig] = dict(MOCK_MODELS)
+
+    if openrouter_client.has_api_key:
+        try:
+            remote_models = await openrouter_client.list_models()
+        except OpenRouterConfigurationError:
+            remote_models = []
+        except OpenRouterAuthError as exc:
+            logger.warning("OpenRouter authentication failed: %s", exc)
+            remote_models = []
+        except OpenRouterError as exc:
+            logger.warning("OpenRouter list_models error: %s", exc)
+            remote_models = []
+
+        for model_name in remote_models:
+            dynamic_models[model_name] = LLMModelConfig(
+                model_name=model_name,
+                provider=LLMProvider.OPENROUTER,
+                context_window=4096,
+                max_tokens=2048,
+                temperature=0.7,
+                top_p=0.9,
+                frequency_penalty=0.0,
+                presence_penalty=0.0,
+            )
+
+    # Keep provider metadata in sync with actual client state (without exposing key)
+    current_openrouter_settings = PROVIDER_SETTINGS[LLMProvider.OPENROUTER]
+    PROVIDER_SETTINGS[LLMProvider.OPENROUTER] = LLMProviderSettings(
+        provider=LLMProvider.OPENROUTER,
+        api_key="configured" if openrouter_client.has_api_key else None,
+        base_url=current_openrouter_settings.base_url,
+        timeout=current_openrouter_settings.timeout,
+        max_retries=current_openrouter_settings.max_retries,
+    )
+
     return LLMConfigResponse(
         active_provider=ACTIVE_PROVIDER,
         active_model=ACTIVE_MODEL,
-        providers=MOCK_PROVIDERS,
-        models=MOCK_MODELS
+        providers=PROVIDER_SETTINGS,
+        models=dynamic_models,
     )
 
 
@@ -214,19 +289,21 @@ async def update_llm_config(config_update: LLMConfigUpdateRequest):
     global ACTIVE_PROVIDER, ACTIVE_MODEL
 
     if config_update.provider:
-        if config_update.provider not in MOCK_PROVIDERS:
+        if config_update.provider not in PROVIDER_SETTINGS:
             raise HTTPException(status_code=400, detail="Provider not available")
         ACTIVE_PROVIDER = config_update.provider
 
     if config_update.model_name:
-        if config_update.model_name not in MOCK_MODELS:
+        provider_hint = config_update.provider or ACTIVE_PROVIDER
+        model_available = await _model_available(config_update.model_name, provider_hint)
+        if not model_available:
             raise HTTPException(status_code=400, detail="Model not available")
         ACTIVE_MODEL = config_update.model_name
 
     if config_update.settings:
-        if config_update.settings.provider not in MOCK_PROVIDERS:
+        if config_update.settings.provider not in PROVIDER_SETTINGS:
             raise HTTPException(status_code=400, detail="Provider not configured")
-        MOCK_PROVIDERS[config_update.settings.provider] = config_update.settings
+        _update_provider_settings(config_update.settings)
 
     if config_update.llm_model_config:
         model_name = config_update.llm_model_config.model_name
@@ -246,21 +323,58 @@ async def get_llm_status(provider: LLMProvider):
     Returns:
         LLMStatusResponse: Status information including health and response time.
     """
-    if provider not in MOCK_PROVIDERS:
+    if provider not in PROVIDER_SETTINGS:
         raise HTTPException(status_code=404, detail="Provider not found")
 
-    # Mock health check with random delay and status
-    await asyncio.sleep(random.uniform(0.1, 0.5))  # Simulate network delay
+    if provider == LLMProvider.OPENROUTER:
+        checked_at = datetime.utcnow()
+        try:
+            start = datetime.utcnow()
+            await openrouter_client.check_connection()
+            elapsed_ms = (datetime.utcnow() - start).total_seconds() * 1000.0
+            return LLMStatusResponse(
+                provider=provider,
+                available=True,
+                healthy=True,
+                response_time_ms=elapsed_ms,
+                error_message=None,
+                last_checked_at=checked_at,
+            )
+        except OpenRouterConfigurationError:
+            return LLMStatusResponse(
+                provider=provider,
+                available=False,
+                healthy=False,
+                response_time_ms=None,
+                error_message="OpenRouter API key is not configured",
+                last_checked_at=checked_at,
+            )
+        except OpenRouterAuthError as exc:
+            return LLMStatusResponse(
+                provider=provider,
+                available=False,
+                healthy=False,
+                response_time_ms=None,
+                error_message=str(exc),
+                last_checked_at=checked_at,
+            )
+        except OpenRouterError as exc:
+            return LLMStatusResponse(
+                provider=provider,
+                available=False,
+                healthy=False,
+                response_time_ms=None,
+                error_message=str(exc),
+                last_checked_at=checked_at,
+            )
 
-    is_available = random.choice([True, True, True, False])  # 75% success rate
-    response_time = random.uniform(100, 1000) if is_available else None
-    error_message = None if is_available else "Connection timeout"
+    # Local provider heuristic (still mocked)
+    await asyncio.sleep(random.uniform(0.1, 0.3))
 
-    # Special logic for local LLM - simulate local server availability
-    if provider == LLMProvider.LOCAL:
-        is_available = random.choice([True, True, False])  # 66% success rate for local
-        if not is_available:
-            error_message = "Local LLM server not responding"
+    local_model = MOCK_LOCAL_MODELS.get(ACTIVE_MODEL)
+    is_available = bool(local_model and local_model.loaded)
+    response_time = random.uniform(50, 150) if is_available else None
+    error_message = None if is_available else "Local model not loaded"
 
     return LLMStatusResponse(
         provider=provider,
@@ -268,7 +382,7 @@ async def get_llm_status(provider: LLMProvider):
         healthy=is_available,
         response_time_ms=response_time,
         error_message=error_message,
-        last_checked_at=datetime.utcnow()
+        last_checked_at=datetime.utcnow(),
     )
 
 
@@ -281,7 +395,7 @@ async def get_all_llm_status():
         List[LLMStatusResponse]: Status information for all providers.
     """
     statuses = []
-    for provider in MOCK_PROVIDERS.keys():
+    for provider in PROVIDER_SETTINGS.keys():
         status = await get_llm_status(provider)
         statuses.append(status)
 
@@ -300,11 +414,11 @@ async def test_llm(test_request: LLMTestRequest):
         LLMTestResponse: Test results including response and metadata.
     """
     model_name = test_request.model_name or ACTIVE_MODEL
+    config = await get_llm_config()
+    model_config = config.models.get(model_name)
 
-    if model_name not in MOCK_MODELS:
+    if model_config is None:
         raise HTTPException(status_code=400, detail="Model not available")
-
-    model_config = MOCK_MODELS[model_name]
 
     # Check if provider is available
     status = await get_llm_status(model_config.provider)
@@ -386,21 +500,21 @@ async def get_openrouter_models():
     Returns:
         OpenRouterModelsListResponse: List of available models.
     """
-    # Mock OpenRouter models
-    mock_openrouter_models = [
-        "gpt-3.5-turbo",
-        "gpt-4",
-        "claude-3-haiku",
-        "claude-3-sonnet",
-        "claude-3-opus",
-        "mistral-7b-instruct",
-        "llama-2-70b-chat",
-        "palm-2-chat-bison"
-    ]
+    if not openrouter_client.has_api_key:
+        return OpenRouterModelsListResponse(models=[], total=0)
+
+    try:
+        models = await openrouter_client.list_models()
+    except OpenRouterConfigurationError:
+        return OpenRouterModelsListResponse(models=[], total=0)
+    except OpenRouterAuthError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    except OpenRouterError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     return OpenRouterModelsListResponse(
-        models=mock_openrouter_models,
-        total=len(mock_openrouter_models)
+        models=models,
+        total=len(models),
     )
 
 
@@ -415,34 +529,32 @@ async def call_openrouter(request: OpenRouterCallRequest):
     Returns:
         OpenRouterCallResponse: API call response.
     """
-    # Validate model availability
-    available_models = await get_openrouter_models()
-    if request.model not in available_models.models:
+    if not openrouter_client.has_api_key:
+        raise HTTPException(status_code=400, detail="OpenRouter API key is not configured")
+
+    if not await _model_available(request.model, LLMProvider.OPENROUTER):
         raise HTTPException(status_code=400, detail="Model not available on OpenRouter")
 
-    # Simulate API call
-    await asyncio.sleep(random.uniform(0.5, 2.0))
-
-    # Mock response based on model
-    mock_responses = {
-        "gpt-3.5-turbo": "I understand your request. Based on the information provided...",
-        "gpt-4": "After careful analysis, I can provide the following insights...",
-        "claude-3-haiku": "Here's my response to your query...",
-        "claude-3-sonnet": "Based on my understanding, the appropriate response is...",
-        "claude-3-opus": "Considering all aspects, I recommend the following approach...",
-    }
-
-    response = mock_responses.get(request.model, "This is a mock response from the API.")
-    tokens_used = len(response.split()) * 1.5  # Rough token estimation
-    cost = tokens_used * 0.0000015  # Mock pricing
-    response_time = random.uniform(300, 1500)
+    try:
+        result = await openrouter_client.chat_completion(
+            model=request.model,
+            prompt=request.prompt,
+            max_tokens=request.max_tokens,
+            temperature=request.temperature,
+        )
+    except OpenRouterAuthError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    except OpenRouterConfigurationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except OpenRouterError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     return OpenRouterCallResponse(
         model=request.model,
-        response=response,
-        tokens_used=int(tokens_used),
-        cost=round(cost, 6),
-        response_time_ms=response_time
+        response=result.get("response", ""),
+        tokens_used=result.get("tokens_used") or 0,
+        cost=(result.get("cost") or 0.0),
+        response_time_ms=result.get("response_time_ms") or 0.0,
     )
 
 
@@ -454,26 +566,44 @@ async def get_openrouter_status():
     Returns:
         OpenRouterStatusResponse: API status information.
     """
-    # Simulate API status check
-    await asyncio.sleep(random.uniform(0.1, 0.3))
-
-    # Mock status (90% success rate)
-    connected = random.choice([True, True, True, True, True, True, True, True, True, False])
-
-    if connected:
-        return OpenRouterStatusResponse(
-            connected=True,
-            credits_remaining=round(random.uniform(10.0, 100.0), 2),
-            rate_limit_remaining=random.randint(50, 100),
-            error_message=None
-        )
-    else:
+    if not openrouter_client.has_api_key:
         return OpenRouterStatusResponse(
             connected=False,
             credits_remaining=None,
             rate_limit_remaining=None,
-            error_message="API key invalid or expired"
+            error_message="OpenRouter API key is not configured",
         )
+
+    try:
+        await openrouter_client.check_connection()
+    except OpenRouterConfigurationError as exc:
+        return OpenRouterStatusResponse(
+            connected=False,
+            credits_remaining=None,
+            rate_limit_remaining=None,
+            error_message=str(exc),
+        )
+    except OpenRouterAuthError as exc:
+        return OpenRouterStatusResponse(
+            connected=False,
+            credits_remaining=None,
+            rate_limit_remaining=None,
+            error_message=str(exc),
+        )
+    except OpenRouterError as exc:
+        return OpenRouterStatusResponse(
+            connected=False,
+            credits_remaining=None,
+            rate_limit_remaining=None,
+            error_message=str(exc),
+        )
+
+    return OpenRouterStatusResponse(
+        connected=True,
+        credits_remaining=None,
+        rate_limit_remaining=None,
+        error_message=None,
+    )
 
 
 # Performance Monitoring Endpoints
@@ -573,7 +703,7 @@ async def switch_llm_mode(provider: LLMProvider, model_name: str):
     """
     global ACTIVE_PROVIDER, ACTIVE_MODEL
 
-    if provider not in MOCK_PROVIDERS:
+    if provider not in PROVIDER_SETTINGS:
         raise HTTPException(status_code=400, detail="Provider not configured")
 
     # Validate model availability for provider
@@ -584,8 +714,9 @@ async def switch_llm_mode(provider: LLMProvider, model_name: str):
         if not MOCK_LOCAL_MODELS[model_name].loaded:
             raise HTTPException(status_code=400, detail="Local model not loaded")
     else:  # OpenRouter
-        available_models = await get_openrouter_models()
-        if model_name not in available_models.models:
+        if not await _model_available(model_name, LLMProvider.OPENROUTER):
+            if not openrouter_client.has_api_key:
+                raise HTTPException(status_code=400, detail="OpenRouter API key is not configured")
             raise HTTPException(status_code=400, detail="OpenRouter model not available")
 
     ACTIVE_PROVIDER = provider

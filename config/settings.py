@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 
 from pydantic_settings import BaseSettings
 
@@ -34,6 +34,15 @@ class Settings(BaseSettings):
 
     # File upload settings
     max_upload_size: int = 10 * 1024 * 1024  # 10MB
+
+    # OpenRouter integration
+    openrouter_api_key: Optional[str] = None
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_referer: Optional[str] = None
+    openrouter_app_name: Optional[str] = "ScriptRating"
+    openrouter_timeout: int = 30
+    storage_root: str = "storage"
+    documents_dir: str = "storage/documents"
 
     class Config:
         env_file = ".env"

@@ -32,6 +32,11 @@ class AgeRating(str, Enum):
     EIGHTEEN_PLUS = "18+"
 
 
+class DocumentType(str, Enum):
+    SCRIPT = "script"
+    CRITERIA = "criteria"
+
+
 # Document Upload DTOs
 class DocumentUploadRequest(BaseModel):
     """Request model for document upload."""
@@ -45,7 +50,19 @@ class DocumentUploadResponse(BaseModel):
     document_id: str = Field(..., description="Unique identifier for the uploaded document")
     filename: str = Field(..., description="Name of the uploaded file")
     uploaded_at: datetime = Field(..., description="Timestamp of upload")
+    document_type: DocumentType = Field(..., description="Type of uploaded document (script or criteria)")
+    chunks_indexed: Optional[int] = Field(None, description="Number of knowledge chunks indexed for criteria documents")
     status: str = Field(default="uploaded", description="Upload status")
+
+
+class NormativeReference(BaseModel):
+    """Reference to a normative document fragment used for justification."""
+    document_id: str = Field(..., description="Identifier of the source document")
+    title: str = Field(..., description="Source document title")
+    page: int = Field(..., description="Referenced page number")
+    paragraph: int = Field(..., description="Referenced paragraph number")
+    excerpt: str = Field(..., description="Excerpt of the normative text")
+    score: float = Field(..., description="Relevance score (0-1)")
 
 
 # Script Analysis DTOs
@@ -59,7 +76,16 @@ class AnalysisOptions(BaseModel):
 class ScriptAnalysisRequest(BaseModel):
     """Request model for script analysis."""
     document_id: str = Field(..., description="ID of the uploaded document")
+    criteria_document_id: Optional[str] = Field(None, description="ID of the criteria document for references")
     options: AnalysisOptions = Field(default_factory=AnalysisOptions, description="Analysis options")
+
+class HighlightFragment(BaseModel):
+    """Highlighted fragment inside the analyzed text."""
+    start: int = Field(..., description="Start index within block text")
+    end: int = Field(..., description="End index within block text")
+    text: str = Field(..., description="Text fragment that triggered the rating")
+    category: Category = Field(..., description="Category responsible for the highlight")
+    severity: Severity = Field(..., description="Severity level for this fragment")
 
 
 class SceneAssessment(BaseModel):
@@ -70,11 +96,18 @@ class SceneAssessment(BaseModel):
     categories: Dict[Category, Severity] = Field(..., description="Severity ratings by category")
     flagged_content: List[str] = Field(default_factory=list, description="List of flagged content items")
     justification: Optional[str] = Field(None, description="Explanation for the rating")
+    age_rating: AgeRating = Field(..., description="Calculated age rating for the block")
+    llm_comment: str = Field(..., description="Generated explanation from LLM")
+    references: List[NormativeReference] = Field(default_factory=list, description="Normative references used")
+    text: str = Field(..., description="Full text of the semantic block")
+    text_preview: Optional[str] = Field(None, description="Short preview of the analyzed block text")
+    highlights: List[HighlightFragment] = Field(default_factory=list, description="Highlighted fragments contributing to rating")
 
 
 class RatingResult(BaseModel):
     """Overall rating result."""
     final_rating: AgeRating = Field(..., description="Calculated age rating")
+    target_rating: Optional[AgeRating] = Field(None, description="Target rating used for comparison")
     confidence_score: float = Field(..., description="Confidence score (0-1)")
     problem_scenes_count: int = Field(..., description="Number of scenes with issues")
     categories_summary: Dict[Category, Severity] = Field(..., description="Summary of highest severity per category")
@@ -97,6 +130,10 @@ class AnalysisStatusResponse(BaseModel):
     status: str = Field(..., description="Current status (pending/processing/completed/failed)")
     progress: Optional[float] = Field(None, description="Progress percentage (0-100)")
     estimated_time_remaining: Optional[int] = Field(None, description="Estimated seconds remaining")
+    processed_blocks: Optional[List[SceneAssessment]] = Field(None, description="Blocks processed so far")
+    rating_result: Optional[RatingResult] = Field(None, description="Intermediate or final rating result")
+    recommendations: Optional[List[str]] = Field(None, description="Recommendations when available")
+    errors: Optional[str] = Field(None, description="Error details if analysis failed")
 
 
 # Report Generation DTOs

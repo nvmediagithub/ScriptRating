@@ -227,6 +227,7 @@ flutter run -d chrome  # or flutter run for native app
    - `DEBUG`: Set to `False` for production
    - `API_HOST` and `API_PORT`: Server binding
    - `CORS_ORIGINS`: Allowed frontend origins
+   - `OPENROUTER_*`: Credentials and options for connecting the backend to [OpenRouter](https://openrouter.ai) (leave unset to keep the system offline-only)
 
 2. **Database Setup**
    - **SQLite (Development)**: No additional setup required
@@ -622,4 +623,3 @@ All rights reserved. This project contains proprietary intellectual property for
 ## 📞 Support
 
 For technical documentation, see [`docs/README.md`](docs/README.md). For implementation details, refer to individual module documentation linked above.
-

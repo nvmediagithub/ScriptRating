@@ -4,7 +4,7 @@ import 'rating_result.dart';
 
 part 'analysis_result.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class AnalysisResult {
   final String analysisId;
   final String documentId;
