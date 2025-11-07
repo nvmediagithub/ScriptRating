@@ -33,7 +33,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   double _progress = 0;
   String _status = 'processing';
   RatingResult? _ratingResult;
-  List<SceneAssessment> _blocks = [];
+  List<dynamic> _blocks = [];
   List<String>? _recommendations;
   String? _error;
   bool _navigated = false;
@@ -42,8 +42,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   void initState() {
     super.initState();
     _fetchStatus();
-    _pollingTimer =
-        Timer.periodic(const Duration(seconds: 2), (_) => _fetchStatus());
+    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (_) => _fetchStatus());
   }
 
   @override
@@ -54,8 +53,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
 
   Future<void> _fetchStatus() async {
     try {
-      final AnalysisStatus status =
-          await _apiService.getAnalysisStatus(widget.analysisId);
+      final AnalysisStatus status = await _apiService.getAnalysisStatus(widget.analysisId);
       if (!mounted) return;
 
       setState(() {
@@ -93,10 +91,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Анализ сценария'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => context.go('/'),
-        ),
+        leading: IconButton(icon: const Icon(Icons.close), onPressed: () => context.go('/')),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -109,11 +104,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                   isCompleted
                       ? Icons.check_circle
                       : isFailed
-                          ? Icons.error
-                          : Icons.sync,
-                  color: isFailed
-                      ? Colors.red
-                      : (isCompleted ? Colors.green : Colors.blue),
+                      ? Icons.error
+                      : Icons.sync,
+                  color: isFailed ? Colors.red : (isCompleted ? Colors.green : Colors.blue),
                   size: 28,
                 ),
                 const SizedBox(width: 12),
@@ -122,20 +115,14 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                     isFailed
                         ? 'Анализ завершился с ошибкой'
                         : isCompleted
-                            ? 'Анализ завершён'
-                            : 'Выполняется анализ...',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
+                        ? 'Анализ завершён'
+                        : 'Выполняется анализ...',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
                 ),
                 Text(
                   '${_progress.toStringAsFixed(1)}%',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -144,9 +131,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               value: (_progress / 100).clamp(0.0, 1.0),
               minHeight: 6,
               backgroundColor: Colors.grey.shade200,
-              color: isFailed
-                  ? Colors.red
-                  : (isCompleted ? Colors.green : Colors.blue),
+              color: isFailed ? Colors.red : (isCompleted ? Colors.green : Colors.blue),
             ),
             const SizedBox(height: 24),
             if (_error != null)
@@ -161,20 +146,13 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                     const Icon(Icons.error_outline, color: Colors.red),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        _error!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
+                      child: Text(_error!, style: const TextStyle(color: Colors.red)),
                     ),
                   ],
                 ),
               )
             else
-              Expanded(
-                child: _blocks.isEmpty
-                    ? _buildIdleState(isCompleted)
-                    : _buildBlocksList(),
-              ),
+              Expanded(child: _blocks.isEmpty ? _buildIdleState(isCompleted) : _buildBlocksList()),
           ],
         ),
       ),
@@ -207,11 +185,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final assessment = _blocks[index];
-        return SceneDetailWidget(
-          assessment: assessment,
-          showReferences: true,
-          dense: true,
-        );
+        return SceneDetailWidget(assessment: assessment, showReferences: true, dense: true);
       },
     );
   }
