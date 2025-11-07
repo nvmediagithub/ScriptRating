@@ -26,7 +26,7 @@ Map<String, dynamic> _$RatingResultToJson(RatingResult instance) =>
       'confidence_score': instance.confidenceScore,
       'problem_scenes_count': instance.problemScenesCount,
       'categories_summary': instance.categoriesSummary.map(
-        (k, e) => MapEntry(_$CategoryEnumMap[k]!, _$SeverityEnumMap[e]!),
+        (k, e) => MapEntry(k, _$SeverityEnumMap[e]!),
       ),
     };
 
@@ -47,8 +47,8 @@ const _$SeverityEnumMap = {
 
 const _$CategoryEnumMap = {
   Category.violence: 'violence',
-  Category.sexualContent: 'sexualContent',
+  Category.sexualContent: 'sexual_content',
   Category.language: 'language',
-  Category.alcoholDrugs: 'alcoholDrugs',
-  Category.disturbingScenes: 'disturbingScenes',
+  Category.alcoholDrugs: 'alcohol_drugs',
+  Category.disturbingScenes: 'disturbing_scenes',
 };

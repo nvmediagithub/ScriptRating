@@ -3,6 +3,7 @@ Script analysis API routes backed by the asynchronous analysis manager.
 """
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import Dict, List
 
@@ -26,6 +27,9 @@ from app.presentation.api.schemas import (
 
 router = APIRouter()
 
+# Configure logging
+logger = logging.getLogger(__name__)
+
 
 def _build_rating_result(payload: Dict | None) -> RatingResult:
     if not payload:
@@ -40,9 +44,19 @@ def _build_rating_result(payload: Dict | None) -> RatingResult:
 
     categories_summary = {}
     for key, value in payload.get("categories_summary", {}).items():
-        category = key if isinstance(key, Category) else Category(key)
-        severity = value if isinstance(value, Severity) else Severity(value)
-        categories_summary[category] = severity
+        try:
+            category = key if isinstance(key, Category) else Category(key)
+            severity = value if isinstance(value, Severity) else Severity(value)
+            categories_summary[category] = severity
+        except ValueError as e:
+            logger.error(f"Invalid category or severity value in categories_summary: key={key}, value={value}, error={e}")
+            raise HTTPException(
+                status_code=400,
+                detail=ErrorDetail(
+                    code="INVALID_CATEGORY_SEVERITY",
+                    message=f"Invalid category or severity value: {key}={value}. Valid categories: {[c.value for c in Category]}, Valid severities: {[s.value for s in Severity]}",
+                ).dict(),
+            ) from e
 
     final_rating = payload.get("final_rating", AgeRating.ZERO_PLUS)
     if not isinstance(final_rating, AgeRating):

@@ -4,6 +4,24 @@ import '../models/analysis_status.dart';
 import '../models/document_type.dart';
 import '../models/script.dart';
 
+String _getMimeType(String filename) {
+  final extension = filename.split('.').last.toLowerCase();
+  switch (extension) {
+    case 'pdf':
+      return 'application/pdf';
+    case 'docx':
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    case 'doc':
+      return 'application/msword';
+    case 'txt':
+      return 'text/plain';
+    case 'rtf':
+      return 'application/rtf';
+    default:
+      return 'application/octet-stream';
+  }
+}
+
 class ApiService {
   final Dio _dio;
 
@@ -40,8 +58,13 @@ class ApiService {
     DocumentType documentType = DocumentType.script,
   }) async {
     try {
+      final mimeType = _getMimeType(filename);
       final formData = FormData.fromMap({
-        'file': MultipartFile.fromBytes(bytes, filename: filename),
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: filename,
+          contentType: DioMediaType.parse(mimeType),
+        ),
         'filename': filename,
         'document_type': documentType.value,
       });

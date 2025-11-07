@@ -25,7 +25,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
   String? _scriptFilename;
   String? _error;
 
-  Future<void> _handleUpload(DocumentType type) async {
+Future<void> _handleUpload(DocumentType type) async {
     final allowedExtensions = ['pdf', 'docx', 'txt'];
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -40,6 +40,19 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
 
       final fileBytes = result.files.single.bytes!;
       final filename = result.files.single.name;
+      
+      // Validate file extension
+      final extension = filename.split('.').last.toLowerCase();
+      if (!allowedExtensions.contains(extension)) {
+        setState(() => _error = 'Неподдерживаемый тип файла. Разрешены: ${allowedExtensions.join(', ')}');
+        return;
+      }
+      
+      // Validate file size (10MB limit)
+      if (fileBytes.length > 10 * 1024 * 1024) {
+        setState(() => _error = 'Файл слишком большой. Максимальный размер: 10 МБ');
+        return;
+      }
 
       setState(() {
         _error = null;

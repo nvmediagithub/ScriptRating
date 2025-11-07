@@ -20,16 +20,16 @@ Map<String, dynamic> _$HighlightFragmentToJson(HighlightFragment instance) =>
       'start': instance.start,
       'end': instance.end,
       'text': instance.text,
-      'category': _$CategoryEnumMap[instance.category]!,
+      'category': instance.category,
       'severity': _$SeverityEnumMap[instance.severity]!,
     };
 
 const _$CategoryEnumMap = {
   Category.violence: 'violence',
-  Category.sexualContent: 'sexualContent',
+  Category.sexualContent: 'sexual_content',
   Category.language: 'language',
-  Category.alcoholDrugs: 'alcoholDrugs',
-  Category.disturbingScenes: 'disturbingScenes',
+  Category.alcoholDrugs: 'alcohol_drugs',
+  Category.disturbingScenes: 'disturbing_scenes',
 };
 
 const _$SeverityEnumMap = {
@@ -79,7 +79,7 @@ Map<String, dynamic> _$SceneAssessmentToJson(SceneAssessment instance) =>
       'heading': instance.heading,
       'page_range': instance.pageRange,
       'categories': instance.categories.map(
-        (k, e) => MapEntry(_$CategoryEnumMap[k]!, _$SeverityEnumMap[e]!),
+        (k, e) => MapEntry(k, _$SeverityEnumMap[e]!),
       ),
       'flagged_content': instance.flaggedContent,
       'justification': instance.justification,
