@@ -154,6 +154,9 @@ Thumbs.db
 /build/
 /coverage/
 
+# Exception for Flutter lib directory
+!flutter/lib/
+
 # Symbolication related
 app.*.symbols
 
