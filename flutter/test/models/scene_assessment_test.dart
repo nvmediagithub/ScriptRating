@@ -747,7 +747,7 @@ void main() {
         // Test that enum values have correct string representations
         expect(sceneAssessment.categories[Category.violence]!.value, 'moderate');
         expect(sceneAssessment.categories[Category.language]!.value, 'severe');
-        expect(sceneAssessment.ageRating.value, '12+');
+        expect(sceneAssessment.ageRating.display, '12+');
       });
 
       test('should handle boundary conditions for scene numbers', () {

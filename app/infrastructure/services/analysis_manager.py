@@ -8,6 +8,7 @@ blocks with references fetched from the KnowledgeBase.
 from __future__ import annotations
 
 import asyncio
+import logging
 import math
 import uuid
 from datetime import datetime
@@ -17,6 +18,9 @@ from app.presentation.api.schemas import AgeRating, Category, Severity
 
 from .knowledge_base import KnowledgeBase
 from .script_store import ScriptStore
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 CATEGORY_KEYWORDS: Dict[Category, Dict[Severity, List[str]]] = {
     Category.VIOLENCE: {
@@ -346,22 +350,31 @@ class AnalysisManager:
         return categories, flagged_content, highlights
 
     def _calculate_block_rating(self, categories: Dict[Category, Severity]) -> AgeRating:
+        """Calculate the appropriate age rating for a block based on detected categories."""
+        logger.debug(f"Calculating block rating for categories: {categories}")
         highest_severity = max(
             categories.values(),
             key=lambda severity: SEVERITY_ORDER.index(severity),
         )
+        logger.debug(f"Highest severity detected: {highest_severity}")
 
         if highest_severity == Severity.NONE:
+            logger.debug("No violations detected, returning ZERO_PLUS")
             return AgeRating.ZERO_PLUS
         if highest_severity == Severity.MILD:
+            logger.debug("Mild violations detected, returning SIX_PLUS")
             return AgeRating.SIX_PLUS
         if highest_severity == Severity.MODERATE:
+            logger.debug("Moderate violations detected, returning TWELVE_PLUS")
             return AgeRating.TWELVE_PLUS
 
         if categories.get(Category.SEXUAL_CONTENT) == Severity.SEVERE or categories.get(
             Category.VIOLENCE
         ) == Severity.SEVERE:
+            logger.debug("Severe sexual content or violence detected, returning EIGHTEEN_PLUS")
             return AgeRating.EIGHTEEN_PLUS
+        
+        logger.debug("Severe violations detected, returning SIXTEEN_PLUS")
         return AgeRating.SIXTEEN_PLUS
 
     def _build_comment(
@@ -399,24 +412,44 @@ class AnalysisManager:
         problem_blocks: int,
         target_rating: Optional[str],
     ) -> Dict[str, Any]:
+        logger.debug(f"Building rating summary with {len(scene_assessments)} scene assessments")
+        logger.debug(f"Aggregated categories: {aggregated_categories}")
+        logger.debug(f"Target rating: {target_rating}")
+        
         final_rating = AgeRating.ZERO_PLUS
         for assessment in scene_assessments:
             block_rating = assessment["age_rating"]
+            logger.debug(f"Block rating: {block_rating} (type: {type(block_rating)})")
+            
+            # Ensure we're working with AgeRating enum values
+            if not isinstance(block_rating, AgeRating):
+                logger.error(f"Block rating is not AgeRating enum: {block_rating} (type: {type(block_rating)})")
+                try:
+                    block_rating = AgeRating(block_rating)
+                    logger.debug(f"Converted block rating to: {block_rating}")
+                except Exception as e:
+                    logger.error(f"Failed to convert block rating: {e}")
+                    continue
+                    
             if RATING_ORDER.index(block_rating) > RATING_ORDER.index(final_rating):
                 final_rating = block_rating
+                logger.debug(f"Updated final rating to: {final_rating}")
 
         severity_counts = sum(
             SEVERITY_ORDER.index(severity) for severity in aggregated_categories.values()
         )
         confidence = max(0.55, min(0.95, 0.65 + severity_counts * 0.05))
 
-        return {
+        result = {
             "final_rating": final_rating,
             "target_rating": target_rating,
             "problem_scenes_count": problem_blocks,
             "categories_summary": aggregated_categories,
             "confidence_score": round(confidence, 2),
         }
+        
+        logger.debug(f"Final rating summary: {result}")
+        return result
 
     def _build_recommendations(
         self, aggregated_categories: Dict[Category, Severity]

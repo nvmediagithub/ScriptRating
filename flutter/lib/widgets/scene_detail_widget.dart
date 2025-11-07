@@ -83,7 +83,7 @@ class SceneDetailWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     _buildChip(
-                      label: assessment.ageRating.value,
+                      label: assessment.ageRating.display,
                       color: _ratingColor(assessment.ageRating),
                     ),
                     const SizedBox(height: 6),

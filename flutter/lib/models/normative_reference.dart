@@ -1,22 +1,26 @@
+import 'package:json_annotation/json_annotation.dart';
+
+part 'normative_reference.g.dart';
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class NormativeReference {
+  final String documentId;
   final String title;
   final int page;
-  final String paragraph;
+  final int paragraph;
   final String excerpt;
+  final double score;
 
-  const NormativeReference({
+  NormativeReference({
+    required this.documentId,
     required this.title,
     required this.page,
     required this.paragraph,
     required this.excerpt,
+    required this.score,
   });
 
-  factory NormativeReference.fromJson(Map<String, dynamic> json) {
-    return NormativeReference(
-      title: json['title'] as String,
-      page: json['page'] as int,
-      paragraph: json['paragraph'] as String,
-      excerpt: json['excerpt'] as String,
-    );
-  }
+  factory NormativeReference.fromJson(Map<String, dynamic> json) =>
+      _$NormativeReferenceFromJson(json);
+  Map<String, dynamic> toJson() => _$NormativeReferenceToJson(this);
 }

@@ -11,8 +11,9 @@ AnalysisResult _$AnalysisResultFromJson(Map<String, dynamic> json) =>
       analysisId: json['analysis_id'] as String,
       documentId: json['document_id'] as String,
       status: json['status'] as String,
-      ratingResult:
-          RatingResult.fromJson(json['rating_result'] as Map<String, dynamic>),
+      ratingResult: RatingResult.fromJson(
+        json['rating_result'] as Map<String, dynamic>,
+      ),
       sceneAssessments: (json['scene_assessments'] as List<dynamic>)
           .map((e) => SceneAssessment.fromJson(e as Map<String, dynamic>))
           .toList(),

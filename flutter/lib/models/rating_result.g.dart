@@ -6,20 +6,18 @@ part of 'rating_result.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-RatingResult _$RatingResultFromJson(Map<String, dynamic> json) =>
-    RatingResult(
-      finalRating: $enumDecode(_$AgeRatingEnumMap, json['final_rating']),
-      targetRating:
-          $enumDecodeNullable(_$AgeRatingEnumMap, json['target_rating']),
-      confidenceScore: (json['confidence_score'] as num).toDouble(),
-      problemScenesCount: (json['problem_scenes_count'] as num).toInt(),
-      categoriesSummary: (json['categories_summary'] as Map<String, dynamic>).map(
-        (k, e) => MapEntry(
-          $enumDecode(_$CategoryEnumMap, k),
-          $enumDecode(_$SeverityEnumMap, e),
-        ),
-      ),
-    );
+RatingResult _$RatingResultFromJson(Map<String, dynamic> json) => RatingResult(
+  finalRating: $enumDecode(_$AgeRatingEnumMap, json['final_rating']),
+  targetRating: $enumDecodeNullable(_$AgeRatingEnumMap, json['target_rating']),
+  confidenceScore: (json['confidence_score'] as num).toDouble(),
+  problemScenesCount: (json['problem_scenes_count'] as num).toInt(),
+  categoriesSummary: (json['categories_summary'] as Map<String, dynamic>).map(
+    (k, e) => MapEntry(
+      $enumDecode(_$CategoryEnumMap, k),
+      $enumDecode(_$SeverityEnumMap, e),
+    ),
+  ),
+);
 
 Map<String, dynamic> _$RatingResultToJson(RatingResult instance) =>
     <String, dynamic>{
@@ -27,8 +25,9 @@ Map<String, dynamic> _$RatingResultToJson(RatingResult instance) =>
       'target_rating': _$AgeRatingEnumMap[instance.targetRating],
       'confidence_score': instance.confidenceScore,
       'problem_scenes_count': instance.problemScenesCount,
-      'categories_summary': instance.categoriesSummary
-          .map((k, e) => MapEntry(_$CategoryEnumMap[k]!, _$SeverityEnumMap[e]!)),
+      'categories_summary': instance.categoriesSummary.map(
+        (k, e) => MapEntry(_$CategoryEnumMap[k]!, _$SeverityEnumMap[e]!),
+      ),
     };
 
 const _$AgeRatingEnumMap = {
@@ -39,17 +38,17 @@ const _$AgeRatingEnumMap = {
   AgeRating.eighteenPlus: '18+',
 };
 
-const _$CategoryEnumMap = {
-  Category.violence: 'violence',
-  Category.sexualContent: 'sexual_content',
-  Category.language: 'language',
-  Category.alcoholDrugs: 'alcohol_drugs',
-  Category.disturbingScenes: 'disturbing_scenes',
-};
-
 const _$SeverityEnumMap = {
   Severity.none: 'none',
   Severity.mild: 'mild',
   Severity.moderate: 'moderate',
   Severity.severe: 'severe',
+};
+
+const _$CategoryEnumMap = {
+  Category.violence: 'violence',
+  Category.sexualContent: 'sexualContent',
+  Category.language: 'language',
+  Category.alcoholDrugs: 'alcoholDrugs',
+  Category.disturbingScenes: 'disturbingScenes',
 };

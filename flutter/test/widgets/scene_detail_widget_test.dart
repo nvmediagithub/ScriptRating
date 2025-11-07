@@ -94,7 +94,7 @@ void main() {
         expect(find.text('Страницы: 15-25'), findsOneWidget);
 
         // Verify rating chips
-        expect(find.text(AgeRating.sixteenPlus.value), findsOneWidget);
+        expect(find.text(AgeRating.sixteenPlus.display), findsOneWidget);
         expect(find.text(Severity.moderate.name), findsOneWidget);
 
         // Verify comment panel
@@ -131,7 +131,7 @@ void main() {
           );
 
           await tester.pumpWidget(createTestWidget(assessment: assessment));
-          expect(find.text(rating.value), findsOneWidget);
+          expect(find.text(rating.display), findsOneWidget);
         }
       });
 

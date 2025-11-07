@@ -49,7 +49,7 @@ class AnalysisResultWidget extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        result.ratingResult.finalRating.value,
+                        result.ratingResult.finalRating.display,
                         style: const TextStyle(
                           fontSize: 48,
                           fontWeight: FontWeight.bold,
@@ -59,7 +59,7 @@ class AnalysisResultWidget extends StatelessWidget {
                       if (result.ratingResult.targetRating != null) ...[
                         const SizedBox(width: 12),
                         Text(
-                          '(целевой: ${result.ratingResult.targetRating!.value})',
+                          '(целевой: ${result.ratingResult.targetRating!.display})',
                           style: const TextStyle(
                             color: Colors.blueGrey,
                             fontSize: 14,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/locator.dart';
 import '../models/llm_dashboard_state.dart';
 import '../models/llm_models.dart';
+import '../models/llm_provider.dart';
 import '../services/llm_service.dart';
 
 final llmServiceProvider = Provider<LlmService>((ref) {

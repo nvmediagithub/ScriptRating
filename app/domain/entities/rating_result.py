@@ -9,15 +9,8 @@ from datetime import datetime
 
 from .scene_assessment import SceneAssessment
 
-
-class AgeRating:
-    """Enumeration of age rating categories."""
-    RATING_0_PLUS = "0+"
-    RATING_6_PLUS = "6+"
-    RATING_12_PLUS = "12+"
-    RATING_16_PLUS = "16+"
-    RATING_18_PLUS = "18+"
-
+# AgeRating is now imported from app.presentation.api.schemas
+# to avoid namespace conflicts
 
 @dataclass
 class ProblemScene:
@@ -79,9 +72,7 @@ class RatingResult:
         if not self.target_rating:
             return True
 
-        rating_order = [AgeRating.RATING_0_PLUS, AgeRating.RATING_6_PLUS,
-                       AgeRating.RATING_12_PLUS, AgeRating.RATING_16_PLUS,
-                       AgeRating.RATING_18_PLUS]
+        rating_order = ["0+", "6+", "12+", "16+", "18+"]
         try:
             final_idx = rating_order.index(self.final_rating)
             target_idx = rating_order.index(self.target_rating)

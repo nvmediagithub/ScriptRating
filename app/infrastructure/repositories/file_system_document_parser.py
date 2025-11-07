@@ -8,6 +8,7 @@ page/paragraph metadata suitable for downstream processing.
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 from typing import List
 
@@ -16,6 +17,9 @@ from docx import Document as DocxDocument
 
 from app.domain.entities.raw_script import RawScript
 from app.domain.repositories.document_parser_repository import DocumentParserRepository
+
+# Initialize logger for the module
+logger = logging.getLogger(__name__)
 
 
 class UnsupportedDocumentFormatError(Exception):
@@ -37,7 +41,15 @@ class FileSystemDocumentParser(DocumentParserRepository):
         Returns:
             RawScript: Parsed script content with metadata.
         """
-        return await asyncio.to_thread(self._parse_sync, file_path)
+        try:
+            return await asyncio.to_thread(self._parse_sync, file_path)
+        except asyncio.CancelledError:
+            # Handle cancellation gracefully
+            logger.warning(f"Document parsing cancelled for {file_path}")
+            raise
+        except Exception as e:
+            logger.error(f"Error parsing document {file_path}: {e}")
+            raise
 
     def supports_format(self, file_path: Path) -> bool:
         """Return True when the file extension is supported."""

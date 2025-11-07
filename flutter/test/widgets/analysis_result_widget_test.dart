@@ -108,8 +108,8 @@ void main() {
         expect(find.text('Итоги оценки'), findsOneWidget);
 
         // Verify main rating display
-        expect(find.text(AgeRating.sixteenPlus.value), findsOneWidget);
-        expect(find.text('(целевой: ${AgeRating.twelvePlus.value})'), findsOneWidget);
+        expect(find.text(AgeRating.sixteenPlus.display), findsOneWidget);
+        expect(find.text('(целевой: ${AgeRating.twelvePlus.display})'), findsOneWidget);
 
         // Verify confidence score
         expect(find.text('Уверенность 85%'), findsOneWidget);
@@ -142,7 +142,7 @@ void main() {
         // Verify basic structure still exists
         expect(find.byType(Card), findsOneWidget);
         expect(find.text('Итоги оценки'), findsOneWidget);
-        expect(find.text(AgeRating.zeroPlus.value), findsOneWidget);
+        expect(find.text(AgeRating.zeroPlus.display), findsOneWidget);
         expect(find.text('Уверенность 100%'), findsOneWidget);
         expect(find.text('Блоков анализировано'), findsOneWidget);
         expect(find.text('0'), findsOneWidget);
@@ -206,7 +206,7 @@ void main() {
         await tester.pumpWidget(createTestWidget(result: noTargetResult));
 
         // Verify final rating is displayed
-        expect(find.text(AgeRating.sixPlus.value), findsOneWidget);
+        expect(find.text(AgeRating.sixPlus.display), findsOneWidget);
         
         // Verify target rating text is not displayed
         expect(find.text('(целевой:'), findsNothing);
@@ -239,7 +239,7 @@ void main() {
           );
 
           await tester.pumpWidget(createTestWidget(result: result));
-          expect(find.text(rating.value), findsOneWidget);
+          expect(find.text(rating.display), findsOneWidget);
         }
       });
 
@@ -419,7 +419,7 @@ void main() {
       testWidgets('should have proper rating display styling', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(result: testAnalysisResult));
 
-        final ratingText = find.text(AgeRating.sixteenPlus.value);
+        final ratingText = find.text(AgeRating.sixteenPlus.display);
         expect(ratingText, findsOneWidget);
 
         // The rating should be prominently displayed in blue color
@@ -672,7 +672,7 @@ void main() {
         final titleText = find.text('Итоги оценки');
         expect(titleText, findsOneWidget);
         
-        final ratingText = find.text(AgeRating.sixteenPlus.value);
+        final ratingText = find.text(AgeRating.sixteenPlus.display);
         expect(ratingText, findsOneWidget);
       });
 

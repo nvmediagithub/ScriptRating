@@ -1,6 +1,6 @@
 // LLM Management Models for Flutter App
 
-enum LLMProvider { local, openrouter }
+import 'llm_provider.dart';
 
 class LLMProviderSettings {
   final LLMProvider provider;
@@ -186,6 +186,36 @@ class LLMConfigResponse {
       'providers': providersJson,
       'models': modelsJson,
     };
+  }
+
+  /// Get the configuration for the active provider
+  LLMProviderSettings get activeProviderSettings {
+    return providers[activeProvider] ?? LLMProviderSettings(provider: activeProvider);
+  }
+
+  /// Get the configuration for the active model
+  LLMModelConfig? get activeModelConfig {
+    return models[activeModel];
+  }
+
+  /// Get all models for a specific provider
+  List<String> getModelsByProvider(LLMProvider provider) {
+    return models.entries
+        .where((entry) => entry.value.provider == provider)
+        .map((entry) => entry.key)
+        .toList();
+  }
+
+  /// Check if a provider is available
+  bool isProviderAvailable(LLMProvider provider) {
+    final settings = providers[provider];
+    if (settings == null) return false;
+
+    if (provider == LLMProvider.openrouter) {
+      return settings.apiKey != null && settings.apiKey!.isNotEmpty;
+    }
+
+    return true; // Local provider is always available if configured
   }
 }
 
@@ -537,6 +567,52 @@ class LLMHealthSummary {
       'active_provider': activeProvider.name,
       'active_model': activeModel,
       'system_healthy': systemHealthy,
+    };
+  }
+}
+
+class LLMTestResponse {
+  final String modelName;
+  final LLMProvider provider;
+  final String prompt;
+  final String response;
+  final int tokensUsed;
+  final double responseTimeMs;
+  final bool success;
+
+  const LLMTestResponse({
+    required this.modelName,
+    required this.provider,
+    required this.prompt,
+    required this.response,
+    required this.tokensUsed,
+    required this.responseTimeMs,
+    required this.success,
+  });
+
+  factory LLMTestResponse.fromJson(Map<String, dynamic> json) {
+    return LLMTestResponse(
+      modelName: json['model_name'] as String,
+      provider: LLMProvider.values.firstWhere(
+        (e) => e.name == json['provider'],
+      ),
+      prompt: json['prompt'] as String,
+      response: json['response'] as String,
+      tokensUsed: json['tokens_used'] as int,
+      responseTimeMs: (json['response_time_ms'] as num).toDouble(),
+      success: json['success'] as bool,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'model_name': modelName,
+      'provider': provider.name,
+      'prompt': prompt,
+      'response': response,
+      'tokens_used': tokensUsed,
+      'response_time_ms': responseTimeMs,
+      'success': success,
     };
   }
 }

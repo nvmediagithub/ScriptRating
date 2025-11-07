@@ -10,7 +10,7 @@ HighlightFragment _$HighlightFragmentFromJson(Map<String, dynamic> json) =>
     HighlightFragment(
       start: (json['start'] as num).toInt(),
       end: (json['end'] as num).toInt(),
-      text: json['text'] as String,
+      text: json['text'] as String? ?? '',
       category: $enumDecode(_$CategoryEnumMap, json['category']),
       severity: $enumDecode(_$SeverityEnumMap, json['severity']),
     );
@@ -24,45 +24,63 @@ Map<String, dynamic> _$HighlightFragmentToJson(HighlightFragment instance) =>
       'severity': _$SeverityEnumMap[instance.severity]!,
     };
 
-SceneAssessment _$SceneAssessmentFromJson(Map<String, dynamic> json) =>
-    SceneAssessment(
-      sceneNumber: (json['scene_number'] as num).toInt(),
-      heading: json['heading'] as String,
-      pageRange: json['page_range'] as String,
-      categories: (json['categories'] as Map<String, dynamic>).map(
-        (k, e) => MapEntry(
-          $enumDecode(_$CategoryEnumMap, k),
-          $enumDecode(_$SeverityEnumMap, e),
-        ),
-      ),
-      flaggedContent: (json['flagged_content'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          const [],
-      justification: json['justification'] as String?,
-      ageRating: $enumDecode(_$AgeRatingEnumMap, json['age_rating']),
-      llmComment: json['llm_comment'] as String,
-      references: (json['references'] as List<dynamic>?)
-              ?.map(
-                  (e) => NormativeReference.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
-      text: json['text'] as String? ?? '',
-      textPreview: json['text_preview'] as String?,
-      highlights: (json['highlights'] as List<dynamic>?)
-              ?.map(
-                  (e) => HighlightFragment.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
-    );
+const _$CategoryEnumMap = {
+  Category.violence: 'violence',
+  Category.sexualContent: 'sexualContent',
+  Category.language: 'language',
+  Category.alcoholDrugs: 'alcoholDrugs',
+  Category.disturbingScenes: 'disturbingScenes',
+};
+
+const _$SeverityEnumMap = {
+  Severity.none: 'none',
+  Severity.mild: 'mild',
+  Severity.moderate: 'moderate',
+  Severity.severe: 'severe',
+};
+
+SceneAssessment _$SceneAssessmentFromJson(
+  Map<String, dynamic> json,
+) => SceneAssessment(
+  sceneNumber: (json['scene_number'] as num).toInt(),
+  heading: json['heading'] as String,
+  pageRange: json['page_range'] as String,
+  categories: (json['categories'] as Map<String, dynamic>).map(
+    (k, e) => MapEntry(
+      $enumDecode(_$CategoryEnumMap, k),
+      $enumDecode(_$SeverityEnumMap, e),
+    ),
+  ),
+  flaggedContent:
+      (json['flagged_content'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  justification: json['justification'] as String?,
+  ageRating: $enumDecode(_$AgeRatingEnumMap, json['age_rating']),
+  llmComment: json['llm_comment'] as String,
+  references:
+      (json['references'] as List<dynamic>?)
+          ?.map((e) => NormativeReference.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+  text: json['text'] as String,
+  textPreview: json['text_preview'] as String?,
+  highlights:
+      (json['highlights'] as List<dynamic>?)
+          ?.map((e) => HighlightFragment.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+);
 
 Map<String, dynamic> _$SceneAssessmentToJson(SceneAssessment instance) =>
     <String, dynamic>{
       'scene_number': instance.sceneNumber,
       'heading': instance.heading,
       'page_range': instance.pageRange,
-      'categories': instance.categories
-          .map((k, e) => MapEntry(_$CategoryEnumMap[k]!, _$SeverityEnumMap[e]!)),
+      'categories': instance.categories.map(
+        (k, e) => MapEntry(_$CategoryEnumMap[k]!, _$SeverityEnumMap[e]!),
+      ),
       'flagged_content': instance.flaggedContent,
       'justification': instance.justification,
       'age_rating': _$AgeRatingEnumMap[instance.ageRating]!,
@@ -72,21 +90,6 @@ Map<String, dynamic> _$SceneAssessmentToJson(SceneAssessment instance) =>
       'text_preview': instance.textPreview,
       'highlights': instance.highlights,
     };
-
-const _$CategoryEnumMap = {
-  Category.violence: 'violence',
-  Category.sexualContent: 'sexual_content',
-  Category.language: 'language',
-  Category.alcoholDrugs: 'alcohol_drugs',
-  Category.disturbingScenes: 'disturbing_scenes',
-};
-
-const _$SeverityEnumMap = {
-  Severity.none: 'none',
-  Severity.mild: 'mild',
-  Severity.moderate: 'moderate',
-  Severity.severe: 'severe',
-};
 
 const _$AgeRatingEnumMap = {
   AgeRating.zeroPlus: '0+',

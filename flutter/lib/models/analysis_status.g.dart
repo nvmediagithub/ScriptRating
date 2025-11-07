@@ -11,13 +11,16 @@ AnalysisStatus _$AnalysisStatusFromJson(Map<String, dynamic> json) =>
       analysisId: json['analysis_id'] as String,
       status: json['status'] as String,
       progress: (json['progress'] as num?)?.toDouble(),
-      processedBlocks: (json['processed_blocks'] as List<dynamic>?)
+      processedBlocks:
+          (json['processed_blocks'] as List<dynamic>?)
               ?.map((e) => SceneAssessment.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
       ratingResult: json['rating_result'] == null
           ? null
-          : RatingResult.fromJson(json['rating_result'] as Map<String, dynamic>),
+          : RatingResult.fromJson(
+              json['rating_result'] as Map<String, dynamic>,
+            ),
       recommendations: (json['recommendations'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),

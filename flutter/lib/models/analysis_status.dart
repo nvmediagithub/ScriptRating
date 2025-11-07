@@ -1,32 +1,31 @@
+import 'package:json_annotation/json_annotation.dart';
+
+import 'rating_result.dart';
+import 'scene_assessment.dart';
+
+part 'analysis_status.g.dart';
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class AnalysisStatus {
-  final double progress;
+  final String analysisId;
   final String status;
-  final dynamic ratingResult;
+  final double? progress;
+  final List<SceneAssessment> processedBlocks;
+  final RatingResult? ratingResult;
   final List<String>? recommendations;
-  final List<dynamic> processedBlocks;
   final String? errors;
 
-  const AnalysisStatus({
-    required this.progress,
+  AnalysisStatus({
+    required this.analysisId,
     required this.status,
+    this.progress,
+    this.processedBlocks = const [],
     this.ratingResult,
     this.recommendations,
-    required this.processedBlocks,
     this.errors,
   });
 
-  factory AnalysisStatus.fromJson(Map<String, dynamic> json) {
-    return AnalysisStatus(
-      progress: (json['progress'] as num?)?.toDouble() ?? 0.0,
-      status: json['status'] as String? ?? 'pending',
-      ratingResult: json['rating_result'],
-      recommendations: json['recommendations'] != null
-          ? List<String>.from(json['recommendations'])
-          : null,
-      processedBlocks: json['processed_blocks'] != null
-          ? List<dynamic>.from(json['processed_blocks'])
-          : [],
-      errors: json['errors'] as String?,
-    );
-  }
+  factory AnalysisStatus.fromJson(Map<String, dynamic> json) =>
+      _$AnalysisStatusFromJson(json);
+  Map<String, dynamic> toJson() => _$AnalysisStatusToJson(this);
 }

@@ -91,7 +91,7 @@ void main() {
           );
 
           expect(ratingResult.finalRating, rating);
-          expect(ratingResult.finalRating.value, isA<String>());
+          expect(ratingResult.finalRating.display, isA<String>());
         }
       });
 
@@ -222,7 +222,7 @@ void main() {
         final validJson = Map<String, dynamic>.from(validRatingResultJson);
         final ratingResult = RatingResult.fromJson(validJson);
         expect(ratingResult.finalRating, isA<AgeRating>());
-        expect(ratingResult.finalRating.value, '16+');
+        expect(ratingResult.finalRating.display, '16+');
       });
 
       test('should handle multiple categories in JSON', () {
@@ -442,7 +442,7 @@ void main() {
           },
         );
 
-        expect(ratingResult.finalRating.value, '16+');
+        expect(ratingResult.finalRating.display, '16+');
         expect(ratingResult.categoriesSummary[Category.violence]!.value, 'moderate');
       });
 
