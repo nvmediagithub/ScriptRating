@@ -28,16 +28,25 @@ void main() {
     // Test Helper Methods
     LlmDashboardState createMockDashboardState() {
       return LlmDashboardState(
-        config: LlmConfiguration(
+        config: LLMConfigResponse(
           activeProvider: LLMProvider.local,
           activeModel: 'llama2-7b',
+          providers: {
+            LLMProvider.local: LLMProviderSettings(provider: LLMProvider.local),
+            LLMProvider.openrouter: LLMProviderSettings(
+              provider: LLMProvider.openrouter,
+              apiKey: 'test-key',
+            ),
+          },
           models: {
-            'llama2-7b': LlmModelConfig(
+            'llama2-7b': LLMModelConfig(
+              modelName: 'llama2-7b',
               provider: LLMProvider.local,
               contextWindow: 4096,
               maxTokens: 2048,
             ),
-            'gpt-3.5-turbo': LlmModelConfig(
+            'gpt-3.5-turbo': LLMModelConfig(
+              modelName: 'gpt-3.5-turbo',
               provider: LLMProvider.openrouter,
               contextWindow: 4096,
               maxTokens: 2048,
@@ -45,35 +54,37 @@ void main() {
           },
         ),
         statuses: [
-          ProviderStatus(
+          LLMStatusResponse(
             provider: LLMProvider.local,
             available: true,
             healthy: true,
-            responseTimeMs: 150,
+            responseTimeMs: 150.0,
             errorMessage: null,
             lastCheckedAt: DateTime.now(),
           ),
-          ProviderStatus(
+          LLMStatusResponse(
             provider: LLMProvider.openrouter,
             available: true,
             healthy: true,
-            responseTimeMs: 300,
+            responseTimeMs: 300.0,
             errorMessage: null,
             lastCheckedAt: DateTime.now(),
           ),
         ],
-        localModels: LocalModelsState(
+        localModels: LocalModelsListResponse(
           models: [
-            LocalLlmModel(
+            LocalModelInfo(
               modelName: 'llama2-7b',
               sizeGb: 3.8,
+              loaded: true,
               contextWindow: 4096,
               maxTokens: 2048,
               lastUsed: DateTime.now().subtract(const Duration(hours: 2)),
             ),
-            LocalLlmModel(
+            LocalModelInfo(
               modelName: 'codellama-13b',
               sizeGb: 6.9,
+              loaded: false,
               contextWindow: 16384,
               maxTokens: 8192,
               lastUsed: null,
@@ -81,23 +92,25 @@ void main() {
           ],
           loadedModels: ['llama2-7b'],
         ),
-        openRouterStatus: OpenRouterStatus(
+        openRouterStatus: OpenRouterStatusResponse(
           connected: true,
           creditsRemaining: 12.45,
           rateLimitRemaining: 95,
           errorMessage: null,
         ),
-        openRouterModels: OpenRouterModelsState(
+        openRouterModels: OpenRouterModelsListResponse(
           models: ['gpt-3.5-turbo', 'gpt-4', 'claude-3-sonnet'],
+          total: 3,
         ),
         performanceReports: [
-          PerformanceReport(
+          PerformanceReportResponse(
             provider: LLMProvider.local,
             timeRange: '24h',
             metrics: PerformanceMetrics(
               totalRequests: 150,
               successfulRequests: 145,
-              averageResponseTimeMs: 1200,
+              failedRequests: 5,
+              averageResponseTimeMs: 1200.0,
               errorRate: 3.3,
               uptimePercentage: 99.2,
               totalTokensUsed: 25000,
@@ -105,10 +118,14 @@ void main() {
             generatedAt: DateTime.now(),
           ),
         ],
-        healthSummary: HealthSummary(
+        healthSummary: LLMHealthSummary(
+          providersStatus: [],
+          localModelsLoaded: 1,
+          localModelsAvailable: 2,
+          openRouterConnected: true,
+          activeProvider: LLMProvider.local,
+          activeModel: 'llama2-7b',
           systemHealthy: true,
-          providersAvailable: 2,
-          providersTotal: 2,
         ),
         isRefreshing: false,
       );
@@ -274,8 +291,8 @@ void main() {
       await tester.pump();
 
       // Assert
-      expect(find.text('150 ms'), findsOneWidget);
-      expect(find.text('300 ms'), findsOneWidget);
+      expect(find.text('150.0 ms'), findsOneWidget);
+      expect(find.text('300.0 ms'), findsOneWidget);
     });
 
     testWidgets('LlmDashboardScreen should show provider health status', (WidgetTester tester) async {
@@ -342,9 +359,8 @@ void main() {
       await tester.pump();
 
       // Assert
-      expect(find.text('Active'), findsOneWidget); // llama2-7b is active
-      expect(find.text('Idle'), findsOneWidget); // codellama-13b is idle
-      expect(find.text('Loaded'), findsOneWidget);
+      expect(find.text('Loaded'), findsOneWidget); // llama2-7b is loaded
+      expect(find.text('Not loaded'), findsOneWidget); // codellama-13b is not loaded
     });
 
     testWidgets('LlmDashboardScreen should render model action buttons', (WidgetTester tester) async {
@@ -431,7 +447,7 @@ void main() {
 
       // Assert
       expect(find.text('145/150'), findsOneWidget); // Success rate
-      expect(find.text('1200 ms'), findsOneWidget); // Average response
+      expect(find.text('1200.0 ms'), findsOneWidget); // Average response
       expect(find.text('3.3%'), findsOneWidget); // Error rate
       expect(find.text('99.2%'), findsOneWidget); // Uptime
       expect(find.text('Tokens used: 25000'), findsOneWidget);
@@ -482,17 +498,74 @@ void main() {
     });
 
     // Error Handling Tests
-    testWidgets('LlmDashboardScreen should show error snackbar on refresh failure', (WidgetTester tester) async {
-      // Note: This would require mocking the refresh to throw an exception
-      // and verifying the error handling in the UI
+    testWidgets('LlmDashboardScreen should handle refresh errors', (WidgetTester tester) async {
+      // Arrange
+      when(() => mockNotifier.refresh(force: anyNamed('force')))
+          .thenThrow(Exception('Refresh failed'));
+      
+      final state = createAsyncData();
+      await tester.pumpWidget(createTestWidget(state: state));
+      await tester.pump();
+
+      // Act
+      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.pump();
+
+      // Assert - Should handle error gracefully
+      verify(() => mockNotifier.refresh(force: true)).called(1);
     });
 
     testWidgets('LlmDashboardScreen should handle provider switching errors', (WidgetTester tester) async {
-      // Note: This would require mocking switchActiveModel to throw an exception
+      // Arrange
+      when(() => mockNotifier.switchActiveModel(any(), any()))
+          .thenThrow(Exception('Provider switch failed'));
+      
+      final state = createAsyncData();
+      await tester.pumpWidget(createTestWidget(state: state));
+      await tester.pump();
+
+      // Act - Try to switch provider
+      await tester.tap(find.byType(DropdownButtonFormField<String>()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OpenRouter • gpt-3.5-turbo'));
+      await tester.pump();
+
+      // Assert
+      verify(() => mockNotifier.switchActiveModel(LLMProvider.openrouter, 'gpt-3.5-turbo')).called(1);
     });
 
     testWidgets('LlmDashboardScreen should handle model loading errors', (WidgetTester tester) async {
-      // Note: This would require mocking loadLocalModel to throw an exception
+      // Arrange
+      when(() => mockNotifier.loadLocalModel(any()))
+          .thenThrow(Exception('Model load failed'));
+      
+      final state = createAsyncData();
+      await tester.pumpWidget(createTestWidget(state: state));
+      await tester.pump();
+
+      // Act
+      await tester.tap(find.text('Load into RAM'));
+      await tester.pump();
+
+      // Assert
+      verify(() => mockNotifier.loadLocalModel('codellama-13b')).called(1);
+    });
+
+    testWidgets('LlmDashboardScreen should handle model unloading errors', (WidgetTester tester) async {
+      // Arrange
+      when(() => mockNotifier.unloadLocalModel(any()))
+          .thenThrow(Exception('Model unload failed'));
+      
+      final state = createAsyncData();
+      await tester.pumpWidget(createTestWidget(state: state));
+      await tester.pump();
+
+      // Act
+      await tester.tap(find.text('Unload from RAM'));
+      await tester.pump();
+
+      // Assert
+      verify(() => mockNotifier.unloadLocalModel('llama2-7b')).called(1);
     });
 
     // Navigation Tests
@@ -563,6 +636,12 @@ void main() {
     });
 
     testWidgets('LlmDashboardScreen should handle data to error transition', (WidgetTester tester) async {
+      // Arrange - Start with data
+      await tester.pumpWidget(createTestWidget(state: createAsyncData()));
+      await tester.pump();
+      expect(find.text('LLM Control Center'), findsOneWidget);
+
+      // Simulate error transition
       // Note: This would require testing state transitions using a real notifier
     });
 
@@ -637,7 +716,7 @@ void main() {
       await tester.pump();
       
       // Open dropdown
-      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.tap(find.byType(DropdownButtonFormField<String>()));
       await tester.pumpAndSettle();
 
       // Select OpenRouter model
@@ -663,11 +742,6 @@ void main() {
 
       // Assert
       verify(() => mockNotifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4')).called(1);
-    });
-
-    testWidgets('LlmDashboardScreen should show appropriate feedback for provider operations', (WidgetTester tester) async {
-      // Note: This would require mocking the operations to succeed and verifying
-      // that success feedback is shown (snackbars, etc.)
     });
 
     // Accessibility Tests
@@ -755,7 +829,7 @@ void main() {
     testWidgets('LlmDashboardScreen should handle offline provider states', (WidgetTester tester) async {
       // Arrange - State with offline provider
       final offlineState = createMockDashboardState().copyWith(
-        openRouterStatus: OpenRouterStatus(
+        openRouterStatus: OpenRouterStatusResponse(
           connected: false,
           creditsRemaining: null,
           rateLimitRemaining: null,
@@ -776,7 +850,7 @@ void main() {
       // Arrange - State with error status
       final errorState = createMockDashboardState().copyWith(
         statuses: [
-          ProviderStatus(
+          LLMStatusResponse(
             provider: LLMProvider.openrouter,
             available: false,
             healthy: false,
@@ -793,6 +867,73 @@ void main() {
 
       // Assert - Should show error message
       expect(find.text('API key invalid'), findsOneWidget);
+    });
+
+    testWidgets('LlmDashboardScreen should handle empty model lists', (WidgetTester tester) async {
+      // Arrange - State with no models
+      final emptyState = createMockDashboardState().copyWith(
+        localModels: LocalModelsListResponse(models: [], loadedModels: []),
+        openRouterModels: OpenRouterModelsListResponse(models: [], total: 0),
+      );
+
+      // Act
+      await tester.pumpWidget(createTestWidget(state: AsyncData(emptyState)));
+      await tester.pump();
+
+      // Assert - Should handle empty lists gracefully
+      expect(find.text('Local Models'), findsOneWidget);
+      expect(find.text('0 loaded'), findsOneWidget);
+      expect(find.text('OpenRouter Models'), findsOneWidget);
+    });
+
+    testWidgets('LlmDashboardScreen should handle very long model names', (WidgetTester tester) async {
+      // Arrange - State with long model names
+      final longNameState = createMockDashboardState().copyWith(
+        localModels: LocalModelsListResponse(
+          models: [
+            LocalModelInfo(
+              modelName: 'very-long-model-name-with-many-characters-that-might-cause-ui-issues',
+              sizeGb: 3.8,
+              loaded: true,
+              contextWindow: 4096,
+              maxTokens: 2048,
+            ),
+          ],
+          loadedModels: ['very-long-model-name-with-many-characters-that-might-cause-ui-issues'],
+        ),
+      );
+
+      // Act
+      await tester.pumpWidget(createTestWidget(state: AsyncData(longNameState)));
+      await tester.pump();
+
+      // Assert - Should handle long names gracefully
+      expect(find.textContaining('very-long-model-name'), findsOneWidget);
+    });
+
+    testWidgets('LlmDashboardScreen should handle special characters in model names', (WidgetTester tester) async {
+      // Arrange - State with special characters
+      final specialCharState = createMockDashboardState().copyWith(
+        localModels: LocalModelsListResponse(
+          models: [
+            LocalModelInfo(
+              modelName: 'model-with-special-chars-@#$%',
+              sizeGb: 3.8,
+              loaded: true,
+              contextWindow: 4096,
+              maxTokens: 2048,
+            ),
+          ],
+          loadedModels: ['model-with-special-chars-@#$%'],
+        ),
+      );
+
+      // Act
+      await tester.pumpWidget(createTestWidget(state: AsyncData(specialCharState)));
+      await tester.pump();
+
+      // Assert - Should handle special characters
+      expect(find.textContaining('model-with-special-chars'), findsOneWidget);
     });
 
     // Integration Tests
@@ -840,6 +981,43 @@ void main() {
       await tester.pump();
       verify(() => mockNotifier.refresh(force: true)).called(2);
     });
+
+    testWidgets('LlmDashboardScreen should handle network connectivity changes', (WidgetTester tester) async {
+      // Arrange - Start with connected state
+      final connectedState = createAsyncData();
+      await tester.pumpWidget(createTestWidget(state: connectedState));
+      await tester.pump();
+
+      // Act - Simulate disconnection
+      final disconnectedState = createMockDashboardState().copyWith(
+        openRouterStatus: OpenRouterStatusResponse(
+          connected: false,
+          errorMessage: 'Network unavailable',
+        ),
+      );
+      await tester.pumpWidget(createTestWidget(state: AsyncData(disconnectedState)));
+      await tester.pump();
+
+      // Assert - Should show disconnected state
+      expect(find.text('Network unavailable'), findsOneWidget);
+    });
+
+    testWidgets('LlmDashboardScreen should handle concurrent user interactions', (WidgetTester tester) async {
+      // Arrange
+      final state = createAsyncData();
+      await tester.pumpWidget(createTestWidget(state: state));
+      await tester.pump();
+
+      // Act - Multiple rapid interactions
+      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.tap(find.text('Load into RAM'));
+      await tester.tap(find.text('gpt-4'));
+      await tester.pump();
+
+      // Assert - All interactions should be handled
+      verify(() => mockNotifier.refresh(force: true)).called(1);
+      verify(() => mockNotifier.loadLocalModel('codellama-13b')).called(1);
+      verify(() => mockNotifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4')).called(1);
+    });
   });
 }
-

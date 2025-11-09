@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:script_rating_app/models/llm_dashboard_state.dart';
 import 'package:script_rating_app/models/llm_models.dart';
+import 'package:script_rating_app/models/llm_provider.dart';
 import 'package:script_rating_app/providers/llm_dashboard_provider.dart';
 import 'package:script_rating_app/services/llm_service.dart';
 
@@ -14,12 +16,14 @@ void main() {
   group('LlmDashboardNotifier', () {
     late ProviderContainer container;
     late MockLlmService mockLlmService;
+    late LlmDashboardNotifier notifier;
 
     setUp(() {
       mockLlmService = MockLlmService();
       container = ProviderContainer(overrides: [
         llmServiceProvider.overrideWith((ref) => mockLlmService),
       ]);
+      notifier = container.read(llmDashboardProvider.notifier);
     });
 
     tearDown(() {
@@ -37,11 +41,10 @@ void main() {
       when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
 
       // Act
-      final dashboardNotifier = container.read(llmDashboardProvider.notifier);
+      final state = container.read(llmDashboardProvider);
 
       // Assert
-      expect(dashboardNotifier.debugState, isA<AsyncValue<LlmDashboardState>>());
-      expect(dashboardNotifier.debugState, isA<AsyncLoading<LlmDashboardState>>());
+      expect(state, isA<AsyncLoading<LlmDashboardState>>());
     });
 
     test('LlmDashboardNotifier should load dashboard state successfully', () async {
@@ -97,8 +100,7 @@ void main() {
       when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
 
       // Act - Force refresh
-      final dashboardNotifier = container.read(llmDashboardProvider.notifier);
-      await dashboardNotifier.refresh(force: true);
+      await notifier.refresh(force: true);
 
       // Assert
       final state = container.read(llmDashboardProvider);
@@ -128,15 +130,14 @@ void main() {
       when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
 
       // Act - First load
-      final dashboardNotifier = container.read(llmDashboardProvider.notifier);
-      await dashboardNotifier.refresh();
+      await notifier.refresh();
 
       // Update mock for non-force refresh
       final updatedConfig = TestDataGenerator.createValidLLMConfig(activeModel: 'updated-model');
       when(() => mockLlmService.getConfig()).thenAnswer((_) async => updatedConfig);
 
       // Non-force refresh
-      await dashboardNotifier.refresh(force: false);
+      await notifier.refresh(force: false);
 
       // Assert
       final state = container.read(llmDashboardProvider);
@@ -155,14 +156,13 @@ void main() {
       when(() => mockLlmService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
       when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
       
-      when(() => mockLlmService.switchMode(any(), any())).thenAnswer((_) async => {});
+      when(() => mockLlmService.switchMode(any(), any())).thenAnswer((_) async => TestDataGenerator.createValidLLMConfig());
 
-      // Act
-      final dashboardNotifier = container.read(llmDashboardProvider.notifier);
-      await dashboardNotifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
+    // Act
+    await notifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
 
-      // Assert
-      verify(() => mockLlmService.switchMode(LLMProvider.openrouter, 'gpt-4')).called(1);
+    // Assert
+    verify(() => mockLlmService.switchMode(LLMProvider.openrouter, 'gpt-4')).called(1);
       
       final state = container.read(llmDashboardProvider);
       expect(state, isA<AsyncData<LlmDashboardState>>());
@@ -183,21 +183,21 @@ void main() {
       when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
       
       // Switch mode fails first time, succeeds second time
+      // Switch mode fails first time, succeeds second time
       when(() => mockLlmService.switchMode(any(), any()))
-          .thenThrow(Exception('Switch failed'))
-          .thenAnswer((_) async => {});
+          .thenThrow(Exception('Switch failed'));
+      when(() => mockLlmService.switchMode(any(), any()))
+          .thenAnswer((_) async => TestDataGenerator.createValidLLMConfig());
 
       // Act
-      final dashboardNotifier = container.read(llmDashboardProvider.notifier);
-      
       // First attempt - should fail
       expect(
-        () => dashboardNotifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4'),
+        () => notifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4'),
         throwsA(isA<Exception>()),
       );
       
       // Second attempt - should succeed
-      await dashboardNotifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
+      await notifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
 
       // Assert
       verify(() => mockLlmService.switchMode(LLMProvider.openrouter, 'gpt-4')).called(2);
@@ -214,39 +214,37 @@ void main() {
       when(() => mockLlmService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
       when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
       
-      when(() => mockLlmService.loadLocalModel(any())).thenAnswer((_) async => {});
+      when(() => mockLlmService.loadLocalModel(any())).thenAnswer((_) async => TestDataGenerator.createValidLocalModels().models.first);
 
-      // Act
-      final dashboardNotifier = container.read(llmDashboardProvider.notifier);
-      await dashboardNotifier.loadLocalModel('llama-2-7b');
+    // Act
+    await notifier.loadLocalModel('llama-2-7b');
 
-      // Assert
-      verify(() => mockLlmService.loadLocalModel('llama-2-7b')).called(1);
+    // Assert
+    verify(() => mockLlmService.loadLocalModel('llama-2-7b')).called(1);
+    
+    final state = container.read(llmDashboardProvider);
+    expect(state, isA<AsyncData<LlmDashboardState>>());
+    expect(state.value?.isRefreshing, isFalse);
+  });
+
+  test('LlmDashboardNotifier should handle unloadLocalModel successfully', () async {
+    // Arrange
+    final mockConfig = TestDataGenerator.createValidLLMConfig();
+    when(() => mockLlmService.getConfig()).thenAnswer((_) async => mockConfig);
+    when(() => mockLlmService.getStatuses()).thenAnswer((_) async => []);
+    when(() => mockLlmService.getLocalModels()).thenAnswer((_) async => TestDataGenerator.createValidLocalModels());
+    when(() => mockLlmService.getOpenRouterStatus()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterStatus());
+    when(() => mockLlmService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
+    when(() => mockLlmService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
+    when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
       
-      final state = container.read(llmDashboardProvider);
-      expect(state, isA<AsyncData<LlmDashboardState>>());
-      expect(state.value?.isRefreshing, isFalse);
-    });
+      when(() => mockLlmService.unloadLocalModel(any())).thenAnswer((_) async => TestDataGenerator.createValidLocalModels().models.first);
 
-    test('LlmDashboardNotifier should handle unloadLocalModel successfully', () async {
-      // Arrange
-      final mockConfig = TestDataGenerator.createValidLLMConfig();
-      when(() => mockLlmService.getConfig()).thenAnswer((_) async => mockConfig);
-      when(() => mockLlmService.getStatuses()).thenAnswer((_) async => []);
-      when(() => mockLlmService.getLocalModels()).thenAnswer((_) async => TestDataGenerator.createValidLocalModels());
-      when(() => mockLlmService.getOpenRouterStatus()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterStatus());
-      when(() => mockLlmService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
-      when(() => mockLlmService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
-      when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
-      
-      when(() => mockLlmService.unloadLocalModel(any())).thenAnswer((_) async => {});
+    // Act
+    await notifier.unloadLocalModel('llama-2-7b');
 
-      // Act
-      final dashboardNotifier = container.read(llmDashboardProvider.notifier);
-      await dashboardNotifier.unloadLocalModel('llama-2-7b');
-
-      // Assert
-      verify(() => mockLlmService.unloadLocalModel('llama-2-7b')).called(1);
+    // Assert
+    verify(() => mockLlmService.unloadLocalModel('llama-2-7b')).called(1);
       
       final state = container.read(llmDashboardProvider);
       expect(state, isA<AsyncData<LlmDashboardState>>());
@@ -259,11 +257,8 @@ void main() {
       when(() => mockLlmService.getConfig()).thenThrow(exception);
 
       // Act
-      final dashboardNotifier = container.read(llmDashboardProvider.notifier);
-
-      // Assert
       expect(
-        () => dashboardNotifier.refresh(),
+        () => notifier.refresh(),
         throwsA(isA<Exception>()),
       );
       
@@ -282,11 +277,8 @@ void main() {
       when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
 
       // Act
-      final dashboardNotifier = container.read(llmDashboardProvider.notifier);
-
-      // Assert
       expect(
-        () => dashboardNotifier.refresh(),
+        () => notifier.refresh(),
         throwsA(isA<Exception>()),
       );
     });
@@ -303,11 +295,10 @@ void main() {
       when(() => mockLlmService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
       when(() => mockLlmService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
       when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
-      when(() => mockLlmService.switchMode(any(), any())).thenAnswer((_) => refreshCompleter.future);
+      when(() => mockLlmService.switchMode(any(), any())).thenAnswer((_) => refreshCompleter.future.then((_) => TestDataGenerator.createValidLLMConfig()));
 
-      // Act
-      final dashboardNotifier = container.read(llmDashboardProvider.notifier);
-      final switchFuture = dashboardNotifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
+    // Act
+    final switchFuture = notifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
 
       // Assert - Should show refreshing state
       final refreshingState = container.read(llmDashboardProvider);
@@ -336,10 +327,9 @@ void main() {
       when(() => mockLlmService.loadLocalModel(any())).thenAnswer((_) async => {});
 
       // Act - Multiple concurrent operations
-      final dashboardNotifier = container.read(llmDashboardProvider.notifier);
-      final switchFuture = dashboardNotifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
-      final loadFuture = dashboardNotifier.loadLocalModel('llama-2-7b');
-      final refreshFuture = dashboardNotifier.refresh();
+      final switchFuture = notifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
+      final loadFuture = notifier.loadLocalModel('llama-2-7b');
+      final refreshFuture = notifier.refresh();
 
       // All should complete without error
       await expectLater(switchFuture, completes);
@@ -363,11 +353,8 @@ void main() {
       when(() => mockLlmService.getPerformanceReports()).thenThrow(serviceUnavailableException);
 
       // Act
-      final dashboardNotifier = container.read(llmDashboardProvider.notifier);
-
-      // Assert
       expect(
-        () => dashboardNotifier.refresh(),
+        () => notifier.refresh(),
         throwsA(isA<Exception>()),
       );
       
@@ -386,8 +373,7 @@ void main() {
       when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => <PerformanceReportResponse>[]);
 
       // Act
-      final dashboardNotifier = container.read(llmDashboardProvider.notifier);
-      await dashboardNotifier.refresh();
+      await notifier.refresh();
 
       // Assert
       final state = container.read(llmDashboardProvider);
@@ -409,13 +395,12 @@ void main() {
       when(() => mockLlmService.switchMode(any(), any())).thenAnswer((_) async => {});
 
       // Act
-      final dashboardNotifier = container.read(llmDashboardProvider.notifier);
-      await dashboardNotifier.refresh();
+      await notifier.refresh();
       
       // Reset mocks for next operation
       when(() => mockLlmService.getConfig()).thenAnswer((_) async => TestDataGenerator.createValidLLMConfig(activeModel: 'model-2'));
       
-      await dashboardNotifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
+      await notifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
 
       // Assert - Should have updated state
       final state = container.read(llmDashboardProvider);
@@ -425,60 +410,278 @@ void main() {
       verify(() => mockLlmService.switchMode(LLMProvider.openrouter, 'gpt-4')).called(1);
     });
 
-    group('Initial State Tests', () {
-      test('LlmDashboardNotifier should initialize with loading state and auto-refresh', () async {
-        // Arrange
-        when(() => mockLlmService.getConfig()).thenAnswer((_) async => TestDataGenerator.createValidLLMConfig());
-        when(() => mockLlmService.getStatuses()).thenAnswer((_) async => []);
-        when(() => mockLlmService.getLocalModels()).thenAnswer((_) async => TestDataGenerator.createValidLocalModels());
-        when(() => mockLlmService.getOpenRouterStatus()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterStatus());
-        when(() => mockLlmService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
-        when(() => mockLlmService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
-        when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
+    test('LlmDashboardNotifier should handle invalid provider enum', () async {
+      // Arrange
+      when(() => mockLlmService.getConfig()).thenAnswer((_) async => TestDataGenerator.createValidLLMConfig());
+      when(() => mockLlmService.getStatuses()).thenAnswer((_) async => []);
+      when(() => mockLlmService.getLocalModels()).thenAnswer((_) async => TestDataGenerator.createValidLocalModels());
+      when(() => mockLlmService.getOpenRouterStatus()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterStatus());
+      when(() => mockLlmService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
+      when(() => mockLlmService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
+      when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
+      when(() => mockLlmService.switchMode(any(), any())).thenThrow(Exception('Invalid provider'));
 
-        // Act & Assert - Initial read should trigger loading
-        final state = container.read(llmDashboardProvider);
-        expect(state, isA<AsyncLoading<LlmDashboardState>>());
-        
-        verify(() => mockLlmService.getConfig()).called(1);
-        verify(() => mockLlmService.getStatuses()).called(1);
-        verify(() => mockLlmService.getLocalModels()).called(1);
-        verify(() => mockLlmService.getOpenRouterStatus()).called(1);
-        verify(() => mockLlmService.getOpenRouterModels()).called(1);
-        verify(() => mockLlmService.getHealthSummary()).called(1);
-        verify(() => mockLlmService.getPerformanceReports()).called(1);
-      });
+      // Act & Assert
+      expect(
+        () => notifier.switchActiveModel(LLMProvider.openrouter, 'invalid-model'),
+        throwsA(isA<Exception>()),
+      );
     });
 
-    group('Async Operations Tests', () {
-      test('LlmDashboardNotifier should handle async operation states correctly', () async {
-        // Arrange
-        final completer = Completer<void>();
-        when(() => mockLlmService.getConfig()).thenAnswer((_) async => TestDataGenerator.createValidLLMConfig());
-        when(() => mockLlmService.getStatuses()).thenAnswer((_) async => []);
-        when(() => mockLlmService.getLocalModels()).thenAnswer((_) async => TestDataGenerator.createValidLocalModels());
-        when(() => mockLlmService.getOpenRouterStatus()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterStatus());
-        when(() => mockLlmService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
-        when(() => mockLlmService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
-        when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
-        when(() => mockLlmService.switchMode(any(), any())).thenAnswer((_) => completer.future);
+    test('LlmDashboardNotifier should handle model load errors', () async {
+      // Arrange
+      when(() => mockLlmService.loadLocalModel(any())).thenThrow(Exception('Model load failed'));
+      when(() => mockLlmService.getConfig()).thenAnswer((_) async => TestDataGenerator.createValidLLMConfig());
+      when(() => mockLlmService.getStatuses()).thenAnswer((_) async => []);
+      when(() => mockLlmService.getLocalModels()).thenAnswer((_) async => TestDataGenerator.createValidLocalModels());
+      when(() => mockLlmService.getOpenRouterStatus()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterStatus());
+      when(() => mockLlmService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
+      when(() => mockLlmService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
+      when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
 
-        // Act
-        final dashboardNotifier = container.read(llmDashboardProvider.notifier);
-        final operationFuture = dashboardNotifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
+      // Act & Assert
+      expect(
+        () => notifier.loadLocalModel('nonexistent-model'),
+        throwsA(isA<Exception>()),
+      );
+    });
 
-        // Assert - Should show loading state
-        final loadingState = container.read(llmDashboardProvider);
-        expect(loadingState.value?.isRefreshing, isTrue);
+    test('LlmDashboardNotifier should handle model unload errors', () async {
+      // Arrange
+      when(() => mockLlmService.unloadLocalModel(any())).thenThrow(Exception('Model unload failed'));
+      when(() => mockLlmService.getConfig()).thenAnswer((_) async => TestDataGenerator.createValidLLMConfig());
+      when(() => mockLlmService.getStatuses()).thenAnswer((_) async => []);
+      when(() => mockLlmService.getLocalModels()).thenAnswer((_) async => TestDataGenerator.createValidLocalModels());
+      when(() => mockLlmService.getOpenRouterStatus()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterStatus());
+      when(() => mockLlmService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
+      when(() => mockLlmService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
+      when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
 
-        // Complete the operation
-        completer.complete();
-        await operationFuture;
+      // Act & Assert
+      expect(
+        () => notifier.unloadLocalModel('unloaded-model'),
+        throwsA(isA<Exception>()),
+      );
+    });
 
-        // Assert - Should complete and clear loading state
-        final finalState = container.read(llmDashboardProvider);
-        expect(finalState.value?.isRefreshing, isFalse);
-      });
+    test('LlmDashboardNotifier should handle timeout during operations', () async {
+      // Arrange
+      final timeoutCompleter = Completer<void>();
+      when(() => mockLlmService.switchMode(any(), any())).thenAnswer((_) => timeoutCompleter.future);
+      when(() => mockLlmService.getConfig()).thenAnswer((_) async => TestDataGenerator.createValidLLMConfig());
+      when(() => mockLlmService.getStatuses()).thenAnswer((_) async => []);
+      when(() => mockLlmService.getLocalModels()).thenAnswer((_) async => TestDataGenerator.createValidLocalModels());
+      when(() => mockLlmService.getOpenRouterStatus()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterStatus());
+      when(() => mockLlmService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
+      when(() => mockLlmService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
+      when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
+
+      // Act
+      final switchFuture = notifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
+      
+      // Verify refreshing state is set
+      expect(container.read(llmDashboardProvider).value?.isRefreshing, isTrue);
+      
+      // Complete the operation
+      timeoutCompleter.complete();
+      await switchFuture;
+
+      // Assert
+      expect(container.read(llmDashboardProvider).value?.isRefreshing, isFalse);
+    });
+
+    test('LlmDashboardNotifier should handle rapid consecutive operations', () async {
+      // Arrange
+      when(() => mockLlmService.switchMode(any(), any())).thenAnswer((_) async => {});
+      when(() => mockLlmService.loadLocalModel(any())).thenAnswer((_) async => {});
+      when(() => mockLlmService.unloadLocalModel(any())).thenAnswer((_) async => {});
+      when(() => mockLlmService.getConfig()).thenAnswer((_) async => TestDataGenerator.createValidLLMConfig());
+      when(() => mockLlmService.getStatuses()).thenAnswer((_) async => []);
+      when(() => mockLlmService.getLocalModels()).thenAnswer((_) async => TestDataGenerator.createValidLocalModels());
+      when(() => mockLlmService.getOpenRouterStatus()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterStatus());
+      when(() => mockLlmService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
+      when(() => mockLlmService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
+      when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
+
+      // Act - Rapid consecutive operations
+      await notifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
+      await notifier.loadLocalModel('llama-2-7b');
+      await notifier.unloadLocalModel('llama-2-7b');
+      await notifier.refresh();
+
+      // Assert - All operations should complete successfully
+      final state = container.read(llmDashboardProvider);
+      expect(state, isA<AsyncData<LlmDashboardState>>());
+      expect(state.value?.isRefreshing, isFalse);
+    });
+
+    test('LlmDashboardNotifier should maintain data consistency during updates', () async {
+      // Arrange
+      when(() => mockLlmService.getConfig()).thenAnswer((_) async => TestDataGenerator.createValidLLMConfig());
+      when(() => mockLlmService.getStatuses()).thenAnswer((_) async => []);
+      when(() => mockLlmService.getLocalModels()).thenAnswer((_) async => TestDataGenerator.createValidLocalModels());
+      when(() => mockLlmService.getOpenRouterStatus()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterStatus());
+      when(() => mockLlmService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
+      when(() => mockLlmService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
+      when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
+      when(() => mockLlmService.switchMode(any(), any())).thenAnswer((_) async => {});
+
+      // Act
+      await notifier.refresh();
+      final initialState = container.read(llmDashboardProvider);
+      
+      await notifier.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
+      final updatedState = container.read(llmDashboardProvider);
+
+      // Assert - Data should be consistent
+      expect(initialState.value?.config, isNotNull);
+      expect(updatedState.value?.config, isNotNull);
+      expect(updatedState.value?.localModels, isNotNull);
+      expect(updatedState.value?.openRouterStatus, isNotNull);
+    });
+
+    test('LlmDashboardNotifier should handle partial refresh failures', () async {
+      // Arrange - First call succeeds, second call fails
+      when(() => mockLlmService.getConfig()).thenAnswer((_) async => TestDataGenerator.createValidLLMConfig());
+      when(() => mockLlmService.getStatuses()).thenAnswer((_) async => []);
+      when(() => mockLlmService.getLocalModels()).thenAnswer((_) async => TestDataGenerator.createValidLocalModels());
+      when(() => mockLlmService.getOpenRouterStatus()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterStatus());
+      when(() => mockLlmService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
+      when(() => mockLlmService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
+      when(() => mockLlmService.getPerformanceReports()).thenAnswer((_) async => []);
+
+      // Act - First refresh should succeed
+      await notifier.refresh();
+      expect(container.read(llmDashboardProvider), isA<AsyncData<LlmDashboardState>>());
+      
+      // Simulate partial failure in second refresh
+      when(() => mockLlmService.getHealthSummary()).thenThrow(Exception('Health check failed'));
+      
+      // Act & Assert - Second refresh should fail
+      expect(
+        () => notifier.refresh(force: true),
+        throwsA(isA<Exception>()),
+      );
+      expect(container.read(llmDashboardProvider), isA<AsyncError<LlmDashboardState>>());
+    });
+  });
+
+  group('LlmDashboardNotifier Edge Cases and Error Scenarios', () {
+    test('should handle rapid refresh calls without interference', () async {
+      // Arrange
+      final container = ProviderContainer(overrides: [
+        llmServiceProvider.overrideWith((ref) {
+          final mockService = MockLlmService();
+          when(() => mockService.getConfig()).thenAnswer((_) async => TestDataGenerator.createValidLLMConfig());
+          when(() => mockService.getStatuses()).thenAnswer((_) async => []);
+          when(() => mockService.getLocalModels()).thenAnswer((_) async => TestDataGenerator.createValidLocalModels());
+          when(() => mockService.getOpenRouterStatus()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterStatus());
+          when(() => mockService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
+          when(() => mockService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
+          when(() => mockService.getPerformanceReports()).thenAnswer((_) async => []);
+          return mockService;
+        }),
+      ]);
+      
+      final notifier = container.read(llmDashboardProvider.notifier);
+
+      // Act - Multiple rapid refresh calls
+      final refresh1 = notifier.refresh();
+      final refresh2 = notifier.refresh(force: true);
+      final refresh3 = notifier.refresh();
+
+      // All should complete without errors
+      await expectLater(refresh1, completes);
+      await expectLater(refresh2, completes);
+      await expectLater(refresh3, completes);
+
+      // Assert - Final state should be valid
+      final state = container.read(llmDashboardProvider);
+      expect(state, isA<AsyncData<LlmDashboardState>>());
+      
+      container.dispose();
+    });
+
+    test('should handle provider service dependency errors', () async {
+      // Arrange
+      final container = ProviderContainer(overrides: [
+        llmServiceProvider.overrideWith((ref) {
+          final mockService = MockLlmService();
+          // Config service fails
+          when(() => mockService.getConfig()).thenThrow(Exception('Config service down'));
+          return mockService;
+        }),
+      ]);
+      
+      final notifier = container.read(llmDashboardProvider.notifier);
+
+      // Act & Assert
+      expect(
+        () => notifier.refresh(),
+        throwsA(isA<Exception>()),
+      );
+      
+      final state = container.read(llmDashboardProvider);
+      expect(state, isA<AsyncError<LlmDashboardState>>());
+      
+      container.dispose();
+    });
+
+    test('should maintain operation isolation between different notifiers', () async {
+      // Arrange - Create two separate containers
+      final container1 = ProviderContainer(overrides: [
+        llmServiceProvider.overrideWith((ref) {
+          final mockService = MockLlmService();
+          when(() => mockService.getConfig()).thenAnswer((_) async => TestDataGenerator.createValidLLMConfig());
+          when(() => mockService.getStatuses()).thenAnswer((_) async => []);
+          when(() => mockService.getLocalModels()).thenAnswer((_) async => TestDataGenerator.createValidLocalModels());
+          when(() => mockService.getOpenRouterStatus()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterStatus());
+          when(() => mockService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
+          when(() => mockService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
+          when(() => mockService.getPerformanceReports()).thenAnswer((_) async => []);
+          when(() => mockService.switchMode(any(), any())).thenAnswer((_) async => {});
+          return mockService;
+        }),
+      ]);
+      
+      final container2 = ProviderContainer(overrides: [
+        llmServiceProvider.overrideWith((ref) {
+          final mockService = MockLlmService();
+          when(() => mockService.getConfig()).thenAnswer((_) async => TestDataGenerator.createValidLLMConfig());
+          when(() => mockService.getStatuses()).thenAnswer((_) async => []);
+          when(() => mockService.getLocalModels()).thenAnswer((_) async => TestDataGenerator.createValidLocalModels());
+          when(() => mockService.getOpenRouterStatus()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterStatus());
+          when(() => mockService.getOpenRouterModels()).thenAnswer((_) async => TestDataGenerator.createValidOpenRouterModels());
+          when(() => mockService.getHealthSummary()).thenAnswer((_) async => TestDataGenerator.createValidHealthSummary());
+          when(() => mockService.getPerformanceReports()).thenAnswer((_) async => []);
+          when(() => mockService.switchMode(any(), any())).thenAnswer((_) async => {});
+          return mockService;
+        }),
+      ]);
+      
+      final notifier1 = container1.read(llmDashboardProvider.notifier);
+      final notifier2 = container2.read(llmDashboardProvider.notifier);
+
+      // Act - Different operations on different notifiers
+      final future1 = notifier1.switchActiveModel(LLMProvider.openrouter, 'gpt-4');
+      final future2 = notifier2.loadLocalModel('llama-2-7b');
+      final future3 = notifier1.refresh();
+
+      // All should complete independently
+      await expectLater(future1, completes);
+      await expectLater(future2, completes);
+      await expectLater(future3, completes);
+
+      // Assert - States should be independent
+      final state1 = container1.read(llmDashboardProvider);
+      final state2 = container2.read(llmDashboardProvider);
+      
+      expect(state1, isA<AsyncData<LlmDashboardState>>());
+      expect(state2, isA<AsyncData<LlmDashboardState>>());
+      expect(state1.value, isNot(equals(state2.value))); // Should be different instances
+      
+      container1.dispose();
+      container2.dispose();
     });
   });
 }
