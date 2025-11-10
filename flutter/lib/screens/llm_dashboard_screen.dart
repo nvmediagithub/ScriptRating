@@ -3,6 +3,12 @@ import 'package:dio/dio.dart';
 import '../services/llm_service.dart';
 import '../models/llm_models.dart';
 import '../models/llm_provider.dart';
+import '../models/chat_message.dart';
+import '../models/chat_session.dart';
+import '../widgets/chat_message_bubble.dart';
+import '../widgets/chat_input_area.dart';
+import '../widgets/chat_session_list.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class LlmDashboardScreen extends StatefulWidget {
   const LlmDashboardScreen({super.key});
@@ -22,10 +28,138 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
   String _apiKey = '';
   String _baseUrl = 'https://openrouter.ai/api/v1';
 
+  // Chat interface state
+  ChatSession? _selectedChatSession;
+  List<ChatSession> _chatSessions = [];
+  List<ChatMessage> _currentChatMessages = [];
+  bool _isChatLoading = false;
+  bool _isProcessingMessage = false;
+
   @override
   void initState() {
     super.initState();
     _loadDashboardData();
+    _loadChatSessions();
+  }
+
+  Future<void> _loadChatSessions() async {
+    setState(() {
+      _isChatLoading = true;
+    });
+
+    try {
+      final sessions = await _llmService.mockGetChatSessions();
+      setState(() {
+        _chatSessions = sessions;
+        _isChatLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isChatLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load chat sessions: $e')));
+      }
+    }
+  }
+
+  Future<void> _selectChatSession(ChatSession session) async {
+    setState(() {
+      _selectedChatSession = session;
+      _isChatLoading = true;
+    });
+
+    try {
+      final messages = await _llmService.mockGetChatMessages(session.id);
+      setState(() {
+        _currentChatMessages = messages;
+        _isChatLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isChatLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load messages: $e')));
+      }
+    }
+  }
+
+  Future<void> _sendMessage(String content) async {
+    if (_selectedChatSession == null) return;
+
+    setState(() {
+      _isProcessingMessage = true;
+    });
+
+    try {
+      // Add user message immediately
+      final userMessage = ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        sessionId: _selectedChatSession!.id,
+        role: MessageRole.user,
+        content: content,
+        createdAt: DateTime.now(),
+      );
+
+      setState(() {
+        _currentChatMessages = [..._currentChatMessages, userMessage];
+        _isProcessingMessage = false;
+      });
+
+      // For now, just simulate a response
+      await Future.delayed(const Duration(seconds: 1));
+
+      final assistantMessage = ChatMessage(
+        id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
+        sessionId: _selectedChatSession!.id,
+        role: MessageRole.assistant,
+        content: 'This is a simulated response to: "$content"',
+        createdAt: DateTime.now(),
+        llmProvider: _selectedChatSession!.llmProvider.value,
+        llmModel: _selectedChatSession!.llmModel,
+        responseTimeMs: 1000,
+      );
+
+      setState(() {
+        _currentChatMessages = [..._currentChatMessages, assistantMessage];
+      });
+    } catch (e) {
+      setState(() {
+        _isProcessingMessage = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to send message: $e')));
+      }
+    }
+  }
+
+  Future<void> _createNewChatSession() async {
+    try {
+      final newSession = await _llmService.createChatSession(
+        title: 'New Chat with ${_config?.activeModel ?? 'LLM'}',
+        provider: _config?.activeProvider ?? LLMProvider.local,
+        model: _config?.activeModel ?? 'default-model',
+      );
+
+      setState(() {
+        _chatSessions = [newSession, ..._chatSessions];
+        _selectedChatSession = newSession;
+        _currentChatMessages = [];
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to create chat session: $e')));
+      }
+    }
   }
 
   Future<void> _loadDashboardData() async {
@@ -99,17 +233,21 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
       if (mounted) {
         final errorMessage = e.toString();
         String userFriendlyMessage;
-        
+
         if (errorMessage.contains('401') || errorMessage.contains('unauthorized')) {
-          userFriendlyMessage = 'Invalid API key. Please check your OpenRouter API key and try again.';
+          userFriendlyMessage =
+              'Invalid API key. Please check your OpenRouter API key and try again.';
         } else if (errorMessage.contains('403') || errorMessage.contains('forbidden')) {
-          userFriendlyMessage = 'Access denied. Please verify your API key has the necessary permissions.';
+          userFriendlyMessage =
+              'Access denied. Please verify your API key has the necessary permissions.';
         } else if (errorMessage.contains('timeout') || errorMessage.contains('connection')) {
-          userFriendlyMessage = 'Connection failed. Please check your internet connection and try again.';
+          userFriendlyMessage =
+              'Connection failed. Please check your internet connection and try again.';
         } else {
-          userFriendlyMessage = 'Configuration failed: ${errorMessage.contains('Exception:') ? errorMessage.replaceAll('Exception: ', '') : errorMessage}';
+          userFriendlyMessage =
+              'Configuration failed: ${errorMessage.contains('Exception:') ? errorMessage.replaceAll('Exception: ', '') : errorMessage}';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(userFriendlyMessage),
@@ -137,12 +275,9 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
   }
 
   void _showValidationError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
   }
 
   Future<void> _switchProvider(LLMProvider provider) async {
@@ -158,7 +293,7 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
     try {
       await _llmService.setActiveProvider(provider);
       await _loadDashboardData();
-      
+
       if (mounted) {
         final providerName = provider.value;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -175,25 +310,30 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
           if (e.toString().contains('api_key') || e.toString().contains('unauthorized')) {
             errorMessage = 'OpenRouter not configured. Please configure your API key first.';
           } else if (e.toString().contains('connection') || e.toString().contains('timeout')) {
-            errorMessage = 'Connection failed. Please check your internet connection and OpenRouter status.';
+            errorMessage =
+                'Connection failed. Please check your internet connection and OpenRouter status.';
           }
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$errorMessage: ${e.toString().contains('Exception:') ? e.toString().replaceAll('Exception: ', '') : e}'),
+            content: Text(
+              '$errorMessage: ${e.toString().contains('Exception:') ? e.toString().replaceAll('Exception: ', '') : e}',
+            ),
             backgroundColor: Colors.red,
-            action: provider == LLMProvider.openrouter ? SnackBarAction(
-              label: 'Configure',
-              textColor: Colors.white,
-              onPressed: () {
-                // Scroll to OpenRouter configuration
-                Scrollable.ensureVisible(
-                  context,
-                  duration: const Duration(milliseconds: 500),
-                );
-              },
-            ) : null,
+            action: provider == LLMProvider.openrouter
+                ? SnackBarAction(
+                    label: 'Configure',
+                    textColor: Colors.white,
+                    onPressed: () {
+                      // Scroll to OpenRouter configuration
+                      Scrollable.ensureVisible(
+                        context,
+                        duration: const Duration(milliseconds: 500),
+                      );
+                    },
+                  )
+                : null,
           ),
         );
       }
@@ -315,7 +455,7 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
           const SizedBox(height: 16),
           _buildStatusMonitoringCard(),
           const SizedBox(height: 16),
-          _buildTestInterfaceCard(),
+          _buildChatInterfaceCard(),
         ],
       ),
     );
@@ -366,18 +506,27 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
             ExpansionTile(
               title: Row(
                 children: [
-                  Icon(Icons.cloud, color: _config!.providers[LLMProvider.openrouter]?.apiKey != null ? Colors.green : Colors.orange),
+                  Icon(
+                    Icons.cloud,
+                    color: _config!.providers[LLMProvider.openrouter]?.apiKey != null
+                        ? Colors.green
+                        : Colors.orange,
+                  ),
                   const SizedBox(width: 8),
                   const Text('OpenRouter Configuration'),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _config!.providers[LLMProvider.openrouter]?.apiKey != null ? Colors.green : Colors.orange,
+                      color: _config!.providers[LLMProvider.openrouter]?.apiKey != null
+                          ? Colors.green
+                          : Colors.orange,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      _config!.providers[LLMProvider.openrouter]?.apiKey != null ? 'Configured' : 'Not Configured',
+                      _config!.providers[LLMProvider.openrouter]?.apiKey != null
+                          ? 'Configured'
+                          : 'Not Configured',
                       style: const TextStyle(color: Colors.white, fontSize: 12),
                     ),
                   ),
@@ -393,10 +542,14 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _config!.providers[LLMProvider.openrouter]?.apiKey != null ? Colors.green.shade50 : Colors.orange.shade50,
+                          color: _config!.providers[LLMProvider.openrouter]?.apiKey != null
+                              ? Colors.green.shade50
+                              : Colors.orange.shade50,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: _config!.providers[LLMProvider.openrouter]?.apiKey != null ? Colors.green : Colors.orange,
+                            color: _config!.providers[LLMProvider.openrouter]?.apiKey != null
+                                ? Colors.green
+                                : Colors.orange,
                           ),
                         ),
                         child: Column(
@@ -405,8 +558,12 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
                             Row(
                               children: [
                                 Icon(
-                                  _config!.providers[LLMProvider.openrouter]?.apiKey != null ? Icons.check_circle : Icons.info,
-                                  color: _config!.providers[LLMProvider.openrouter]?.apiKey != null ? Colors.green : Colors.orange,
+                                  _config!.providers[LLMProvider.openrouter]?.apiKey != null
+                                      ? Icons.check_circle
+                                      : Icons.info,
+                                  color: _config!.providers[LLMProvider.openrouter]?.apiKey != null
+                                      ? Colors.green
+                                      : Colors.orange,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
@@ -414,7 +571,10 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
                                       ? 'OpenRouter is configured and ready to use'
                                       : 'OpenRouter needs to be configured to access cloud-based models',
                                   style: TextStyle(
-                                    color: _config!.providers[LLMProvider.openrouter]?.apiKey != null ? Colors.green.shade700 : Colors.orange.shade700,
+                                    color:
+                                        _config!.providers[LLMProvider.openrouter]?.apiKey != null
+                                        ? Colors.green.shade700
+                                        : Colors.orange.shade700,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -431,7 +591,7 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // API Key Input
                       TextFormField(
                         decoration: InputDecoration(
@@ -440,11 +600,13 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
                           prefixIcon: const Icon(Icons.key),
                           suffixIcon: _apiKey.isNotEmpty
                               ? (_isValidOpenRouterKey(_apiKey)
-                                  ? const Icon(Icons.check_circle, color: Colors.green)
-                                  : const Icon(Icons.error, color: Colors.red))
+                                    ? const Icon(Icons.check_circle, color: Colors.green)
+                                    : const Icon(Icons.error, color: Colors.red))
                               : null,
                           border: const OutlineInputBorder(),
-                          errorBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.red)),
+                          errorBorder: const OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.red),
+                          ),
                         ),
                         obscureText: true,
                         autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -464,7 +626,7 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
                         },
                       ),
                       const SizedBox(height: 12),
-                      
+
                       // Base URL Input
                       TextFormField(
                         decoration: const InputDecoration(
@@ -481,7 +643,7 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Configure Button
                       SizedBox(
                         width: double.infinity,
@@ -491,7 +653,10 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
                                 )
                               : const Icon(Icons.cloud_done),
                           label: Text(_isLoading ? 'Configuring...' : 'Configure OpenRouter'),
@@ -501,9 +666,9 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 8),
-                      
+
                       // Quick Help
                       TextButton.icon(
                         onPressed: _showOpenRouterConfigHelp,
@@ -523,10 +688,7 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
             ..._config!.providers.entries.map(
               (entry) => Card(
                 child: ListTile(
-                  leading: Icon(
-                    _getProviderIcon(entry.key),
-                    color: _getProviderColor(entry.key),
-                  ),
+                  leading: Icon(_getProviderIcon(entry.key), color: _getProviderColor(entry.key)),
                   title: Text(
                     entry.key.value,
                     style: _config!.activeProvider == entry.key
@@ -538,25 +700,28 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
                     children: [
                       Text(_isProviderConfigured(entry.key) ? 'Configured' : 'Not configured'),
                       if (_config!.activeProvider == entry.key)
-                        const Text('Active', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w500)),
+                        const Text(
+                          'Active',
+                          style: TextStyle(color: Colors.green, fontWeight: FontWeight.w500),
+                        ),
                     ],
                   ),
                   trailing: _config!.activeProvider == entry.key
                       ? const Icon(Icons.check_circle, color: Colors.green)
                       : _isProviderConfigurable(entry.key)
-                          ? (entry.key == LLMProvider.openrouter && !_isProviderConfigured(entry.key)
-                              ? IconButton(
-                                  icon: const Icon(Icons.add, color: Colors.orange),
-                                  onPressed: () {
-                                    // Scroll to OpenRouter configuration
-                                    Scrollable.ensureVisible(
-                                      context,
-                                      duration: const Duration(milliseconds: 500),
-                                    );
-                                  },
-                                )
-                              : null)
-                          : null,
+                      ? (entry.key == LLMProvider.openrouter && !_isProviderConfigured(entry.key)
+                            ? IconButton(
+                                icon: const Icon(Icons.add, color: Colors.orange),
+                                onPressed: () {
+                                  // Scroll to OpenRouter configuration
+                                  Scrollable.ensureVisible(
+                                    context,
+                                    duration: const Duration(milliseconds: 500),
+                                  );
+                                },
+                              )
+                            : null)
+                      : null,
                   onTap: _config!.activeProvider == entry.key
                       ? null
                       : () => _switchProvider(entry.key),
@@ -578,13 +743,15 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
     // Create unique model list to prevent duplicate values
     final uniqueModels = <String>{};
     final uniqueAvailableModels = <LLMModelConfig>[];
-    
+
     for (final model in availableModels) {
       if (uniqueModels.add(model.modelName)) {
         uniqueAvailableModels.add(model);
       } else {
         // Log duplicate found (for debugging)
-        debugPrint('Duplicate model found: ${model.modelName} for provider ${model.provider.value}');
+        debugPrint(
+          'Duplicate model found: ${model.modelName} for provider ${model.provider.value}',
+        );
       }
     }
 
@@ -635,17 +802,23 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: _isLoading ? null : () {
-                  if (_config!.activeProvider == LLMProvider.openrouter) {
-                    // Scroll to OpenRouter configuration
-                    _showOpenRouterConfigHelp();
-                  } else {
-                    // For local provider, suggest loading a model
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please load a local model through the provider status section')),
-                    );
-                  }
-                },
+                onPressed: _isLoading
+                    ? null
+                    : () {
+                        if (_config!.activeProvider == LLMProvider.openrouter) {
+                          // Scroll to OpenRouter configuration
+                          _showOpenRouterConfigHelp();
+                        } else {
+                          // For local provider, suggest loading a model
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Please load a local model through the provider status section',
+                              ),
+                            ),
+                          );
+                        }
+                      },
                 icon: const Icon(Icons.help),
                 label: Text(
                   _config!.activeProvider == LLMProvider.openrouter
@@ -664,7 +837,8 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
                   return DropdownMenuItem<String>(
                     value: model.modelName,
                     child: Tooltip(
-                      message: 'Context: ${model.contextWindow}, Max Tokens: ${model.maxTokens}, Temp: ${model.temperature}',
+                      message:
+                          'Context: ${model.contextWindow}, Max Tokens: ${model.maxTokens}, Temp: ${model.temperature}',
                       child: Text(model.modelName),
                     ),
                   );
@@ -723,10 +897,7 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
+            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK')),
           ],
         );
       },
@@ -774,59 +945,158 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
     );
   }
 
-  Widget _buildTestInterfaceCard() {
+  Widget _buildChatInterfaceCard() {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Test Interface', style: Theme.of(context).textTheme.headlineSmall),
+            Text('Real-Time Chat Interface', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 16),
 
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Test Prompt',
-                hintText: 'Enter a test prompt for the LLM...',
-                border: OutlineInputBorder(),
+            // Chat interface header
+            Row(
+              children: [
+                Icon(Icons.chat, color: Theme.of(context).primaryColor),
+                const SizedBox(width: 8),
+                Text('Interactive LLM Chat', style: Theme.of(context).textTheme.titleMedium),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  onPressed: _createNewChatSession,
+                  tooltip: 'Start New Chat',
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Chat content area
+            Container(
+              height: 300,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(8),
               ),
-              maxLines: 3,
-              onChanged: (value) {
-                setState(() {
-                  _testPrompt = value;
-                });
-              },
+              child: _isChatLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : (_selectedChatSession != null
+                        ? Column(
+                            children: [
+                              // Chat session info
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(8),
+                                    topRight: Radius.circular(8),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _selectedChatSession!.llmProvider == LLMProvider.local
+                                          ? Icons.computer
+                                          : Icons.cloud,
+                                      size: 16,
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${_selectedChatSession!.llmProvider.value} • ${_selectedChatSession!.llmModel}',
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Divider(height: 1),
+                              // Messages area
+                              Expanded(
+                                child: _currentChatMessages.isEmpty
+                                    ? Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.chat_bubble_outline,
+                                              size: 48,
+                                              color: Colors.grey[400],
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              'No messages yet',
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontStyle: FontStyle.italic,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    : ListView.builder(
+                                        itemCount: _currentChatMessages.length,
+                                        itemBuilder: (context, index) {
+                                          final message = _currentChatMessages[index];
+                                          return ChatMessageBubble(message: message);
+                                        },
+                                      ),
+                              ),
+                              const Divider(height: 1),
+                              // Input area
+                              ChatInputArea(
+                                onSendMessage: _sendMessage,
+                                isProcessing: _isProcessingMessage,
+                                hintText: 'Type your message...',
+                              ),
+                            ],
+                          )
+                        : Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[400]),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No chat session selected',
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Select a session or create a new one to start chatting',
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  onPressed: _createNewChatSession,
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Start New Chat'),
+                                ),
+                              ],
+                            ),
+                          )),
             ),
-            const SizedBox(height: 12),
 
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _testLLM,
-              icon: _isLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.send),
-              label: const Text('Test LLM'),
-            ),
-
-            if (_testResponse.isNotEmpty) ...[
+            if (_chatSessions.isNotEmpty) ...[
               const SizedBox(height: 16),
+              Text('Recent Sessions', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
               Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                height: 120,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  border: Border.all(color: Colors.grey[300]!),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Response:', style: Theme.of(context).textTheme.titleSmall),
-                    const SizedBox(height: 8),
-                    SelectableText(_testResponse, style: const TextStyle(fontFamily: 'monospace')),
-                  ],
+                child: ChatSessionList(
+                  sessions: _chatSessions.take(3).toList(),
+                  selectedSession: _selectedChatSession,
+                  onSessionSelected: _selectChatSession,
+                  isLoading: _isChatLoading,
                 ),
               ),
             ],
@@ -886,8 +1156,8 @@ class _LlmDashboardScreenState extends State<LlmDashboardScreen> {
         return true; // Local provider is always considered configured
       case LLMProvider.openrouter:
         return settings.apiKey != null &&
-               settings.apiKey!.isNotEmpty &&
-               settings.apiKey!.startsWith('sk-or-');
+            settings.apiKey!.isNotEmpty &&
+            settings.apiKey!.startsWith('sk-or-');
     }
   }
 

@@ -21,9 +21,7 @@ class SceneDetailWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final Severity highestSeverity = assessment.categories.isEmpty
         ? Severity.none
-        : assessment.categories.values.reduce(
-            (a, b) => a.index >= b.index ? a : b,
-          );
+        : assessment.categories.values.reduce((a, b) => a.index >= b.index ? a : b);
 
     return Card(
       margin: EdgeInsets.only(bottom: dense ? 8 : 12),
@@ -52,27 +50,20 @@ class SceneDetailWidget extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      SelectableText(
                         assessment.heading,
-                        style: TextStyle(
-                          fontSize: dense ? 15 : 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: TextStyle(fontSize: dense ? 15 : 16, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      SelectableText(
                         'Страницы: ${assessment.pageRange}',
                         style: const TextStyle(color: Colors.grey, fontSize: 12),
                       ),
-                      if (assessment.textPreview != null &&
-                          assessment.textPreview!.isNotEmpty) ...[
+                      if (assessment.textPreview != null && assessment.textPreview!.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        Text(
+                        SelectableText(
                           'Фрагмент: ${assessment.textPreview}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black54,
-                          ),
+                          style: const TextStyle(fontSize: 12, color: Colors.black54),
                         ),
                       ],
                     ],
@@ -87,10 +78,7 @@ class SceneDetailWidget extends StatelessWidget {
                       color: _ratingColor(assessment.ageRating),
                     ),
                     const SizedBox(height: 6),
-                    _buildChip(
-                      label: highestSeverity.name,
-                      color: _severityColor(highestSeverity),
-                    ),
+                    _buildChip(label: highestSeverity.name, color: _severityColor(highestSeverity)),
                   ],
                 ),
               ],
@@ -99,11 +87,7 @@ class SceneDetailWidget extends StatelessWidget {
               const SizedBox(height: 12),
               const Text(
                 'Обнаруженные элементы:',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey,
-                ),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey),
               ),
               const SizedBox(height: 6),
               Wrap(
@@ -147,11 +131,7 @@ class SceneDetailWidget extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: color.darken(0.2),
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-        ),
+        style: TextStyle(color: color.darken(0.2), fontWeight: FontWeight.w600, fontSize: 12),
       ),
     );
   }
@@ -159,23 +139,16 @@ class SceneDetailWidget extends StatelessWidget {
   Widget _buildCommentPanel(String comment) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(8),
-      ),
+      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.chat_bubble_outline, size: 18, color: Colors.blue),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
+            child: SelectableText(
               comment,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Colors.black87,
-                height: 1.4,
-              ),
+              style: const TextStyle(fontSize: 13, color: Colors.black87, height: 1.4),
             ),
           ),
         ],
@@ -189,22 +162,16 @@ class SceneDetailWidget extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final baseStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-          height: 1.4,
-        );
+    final baseStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4);
     final spans = <TextSpan>[];
     int cursor = 0;
-    final sortedHighlights = [...assessment.highlights]
-      ..sort((a, b) => a.start.compareTo(b.start));
+    final sortedHighlights = [...assessment.highlights]..sort((a, b) => a.start.compareTo(b.start));
 
     for (final highlight in sortedHighlights) {
       final start = highlight.start.clamp(0, text.length);
       final end = highlight.end.clamp(0, text.length);
       if (start > cursor) {
-        spans.add(TextSpan(
-          text: text.substring(cursor, start),
-          style: baseStyle,
-        ));
+        spans.add(TextSpan(text: text.substring(cursor, start), style: baseStyle));
       }
       if (end > start) {
         final color = _highlightSeverityColor(highlight.severity);
@@ -223,10 +190,7 @@ class SceneDetailWidget extends StatelessWidget {
     }
 
     if (cursor < text.length) {
-      spans.add(TextSpan(
-        text: text.substring(cursor),
-        style: baseStyle,
-      ));
+      spans.add(TextSpan(text: text.substring(cursor), style: baseStyle));
     }
 
     return Column(
@@ -234,9 +198,7 @@ class SceneDetailWidget extends StatelessWidget {
       children: [
         Text(
           'Фрагмент сценария',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Colors.grey.shade700,
-              ),
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.grey.shade700),
         ),
         const SizedBox(height: 6),
         Container(
@@ -248,16 +210,10 @@ class SceneDetailWidget extends StatelessWidget {
             border: Border.all(color: Colors.grey.shade300),
           ),
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: dense ? 160 : 240,
-            ),
+            constraints: BoxConstraints(maxHeight: dense ? 160 : 240),
             child: Scrollbar(
               thumbVisibility: true,
-              child: SingleChildScrollView(
-                child: SelectableText.rich(
-                  TextSpan(children: spans),
-                ),
-              ),
+              child: SingleChildScrollView(child: SelectableText.rich(TextSpan(children: spans))),
             ),
           ),
         ),
@@ -271,11 +227,7 @@ class SceneDetailWidget extends StatelessWidget {
       children: [
         const Text(
           'Нормативные ссылки:',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey,
-          ),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey),
         ),
         const SizedBox(height: 6),
         ...references.map(
@@ -290,20 +242,17 @@ class SceneDetailWidget extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                SelectableText(
                   ref.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                SelectableText(
                   'Стр. ${ref.page}, п. ${ref.paragraph}',
                   style: const TextStyle(color: Colors.grey, fontSize: 11),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                SelectableText(
                   ref.excerpt,
                   style: const TextStyle(fontSize: 12, color: Colors.black87),
                 ),

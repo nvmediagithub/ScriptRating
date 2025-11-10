@@ -38,17 +38,13 @@ class AnalysisResultWidget extends StatelessWidget {
                 children: [
                   const Text(
                     'Итоговый возрастной рейтинг',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.blue,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.blue, fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
+                      SelectableText(
                         result.ratingResult.finalRating.display,
                         style: const TextStyle(
                           fontSize: 48,
@@ -58,12 +54,9 @@ class AnalysisResultWidget extends StatelessWidget {
                       ),
                       if (result.ratingResult.targetRating != null) ...[
                         const SizedBox(width: 12),
-                        Text(
+                        SelectableText(
                           '(целевой: ${result.ratingResult.targetRating!.display})',
-                          style: const TextStyle(
-                            color: Colors.blueGrey,
-                            fontSize: 14,
-                          ),
+                          style: const TextStyle(color: Colors.blueGrey, fontSize: 14),
                         ),
                       ],
                     ],
@@ -74,12 +67,9 @@ class AnalysisResultWidget extends StatelessWidget {
                     children: [
                       const Icon(Icons.verified, color: Colors.green, size: 16),
                       const SizedBox(width: 4),
-                      Text(
+                      SelectableText(
                         'Уверенность ${(result.ratingResult.confidenceScore * 100).round()}%',
-                        style: const TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
@@ -103,8 +93,8 @@ class AnalysisResultWidget extends StatelessWidget {
                     'Проблемных блоков',
                     result.sceneAssessments
                         .where(
-                          (scene) => scene.categories.values
-                              .any((severity) => severity != Severity.none),
+                          (scene) =>
+                              scene.categories.values.any((severity) => severity != Severity.none),
                         )
                         .length
                         .toString(),
@@ -120,12 +110,7 @@ class AnalysisResultWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -137,22 +122,14 @@ class AnalysisResultWidget extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 24),
           const SizedBox(height: 8),
-          Text(
+          SelectableText(
             value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color),
           ),
           const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 12,
-              color: color,
-              fontWeight: FontWeight.w500,
-            ),
+            style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500),
             textAlign: TextAlign.center,
           ),
         ],

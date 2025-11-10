@@ -111,7 +111,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
+                  child: SelectableText(
                     isFailed
                         ? 'Анализ завершился с ошибкой'
                         : isCompleted
@@ -120,7 +120,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
                 ),
-                Text(
+                SelectableText(
                   '${_progress.toStringAsFixed(1)}%',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
@@ -146,7 +146,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                     const Icon(Icons.error_outline, color: Colors.red),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                      child: SelectableText(_error!, style: const TextStyle(color: Colors.red)),
                     ),
                   ],
                 ),
@@ -169,7 +169,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
         children: [
           const CircularProgressIndicator(),
           const SizedBox(height: 24),
-          Text(
+          SelectableText(
             message,
             style: const TextStyle(color: Colors.grey),
             textAlign: TextAlign.center,

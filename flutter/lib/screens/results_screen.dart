@@ -44,8 +44,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     });
 
     try {
-      final AnalysisResult result =
-          await _apiService.getAnalysisResult(widget.analysisId!);
+      final AnalysisResult result = await _apiService.getAnalysisResult(widget.analysisId!);
       if (!mounted) return;
       setState(() => _analysisResult = result);
     } catch (e) {
@@ -63,27 +62,18 @@ class _ResultsScreenState extends State<ResultsScreen> {
       appBar: AppBar(
         title: const Text('Результаты анализа'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () => context.go('/history'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.feedback),
-            onPressed: () => context.go('/feedback'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.file_download),
-            onPressed: () => context.go('/report'),
-          ),
+          IconButton(icon: const Icon(Icons.history), onPressed: () => context.go('/history')),
+          IconButton(icon: const Icon(Icons.feedback), onPressed: () => context.go('/feedback')),
+          IconButton(icon: const Icon(Icons.file_download), onPressed: () => context.go('/report')),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? _buildError()
-              : _analysisResult == null
-                  ? _buildEmptyState()
-                  : _buildContent(),
+          ? _buildError()
+          : _analysisResult == null
+          ? _buildEmptyState()
+          : _buildContent(),
     );
   }
 
@@ -94,34 +84,27 @@ class _ResultsScreenState extends State<ResultsScreen> {
         children: [
           const Icon(Icons.error_outline, size: 64, color: Colors.red),
           const SizedBox(height: 16),
-          Text(
+          SelectableText(
             _error ?? 'Неизвестная ошибка',
             style: const TextStyle(color: Colors.red),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadResults,
-            child: const Text('Повторить запрос'),
-          ),
+          ElevatedButton(onPressed: _loadResults, child: const Text('Повторить запрос')),
         ],
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return const Center(
-      child: Text('Данных анализа пока нет. Вернитесь позже.'),
-    );
+    return const Center(child: SelectableText('Данных анализа пока нет. Вернитесь позже.'));
   }
 
   Widget _buildContent() {
     final result = _analysisResult!;
     final categorySummary = result.ratingResult.categoriesSummary.map(
-      (Category key, Severity value) => MapEntry(
-        key.value,
-        value.index / (Severity.values.length - 1),
-      ),
+      (Category key, Severity value) =>
+          MapEntry(key.value, value.index / (Severity.values.length - 1)),
     );
 
     return SingleChildScrollView(
@@ -130,13 +113,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AnalysisResultWidget(result: result),
-          if (result.recommendations != null &&
-              result.recommendations!.isNotEmpty) ...[
+          if (result.recommendations != null && result.recommendations!.isNotEmpty) ...[
             const SizedBox(height: 24),
-            const Text(
-              'Рекомендации',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
+            const Text('Рекомендации', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             ...result.recommendations!.map(
               (item) => Padding(
@@ -145,12 +124,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('• '),
-                    Expanded(
-                      child: Text(
-                        item,
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                    ),
+                    Expanded(child: SelectableText(item, style: const TextStyle(fontSize: 14))),
                   ],
                 ),
               ),
@@ -170,10 +144,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           ),
           const SizedBox(height: 16),
           ...result.sceneAssessments.map(
-            (assessment) => SceneDetailWidget(
-              assessment: assessment,
-              showReferences: true,
-            ),
+            (assessment) => SceneDetailWidget(assessment: assessment, showReferences: true),
           ),
           const SizedBox(height: 24),
           Center(

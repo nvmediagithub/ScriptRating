@@ -30,12 +30,12 @@ class CategorySummaryWidget extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
+                        child: SelectableText(
                           entry.key,
                           style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
                       ),
-                      Text(
+                      SelectableText(
                         '${(entry.value * 100).round()}%',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
@@ -48,9 +48,7 @@ class CategorySummaryWidget extends StatelessWidget {
                   LinearProgressIndicator(
                     value: entry.value,
                     backgroundColor: Colors.grey.shade200,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      _getScoreColor(entry.value),
-                    ),
+                    valueColor: AlwaysStoppedAnimation<Color>(_getScoreColor(entry.value)),
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -69,13 +67,9 @@ class CategorySummaryWidget extends StatelessWidget {
                   const Icon(Icons.info_outline, color: Colors.blue, size: 16),
                   const SizedBox(width: 8),
                   const Expanded(
-                    child: Text(
+                    child: SelectableText(
                       'Чем выше показатель, тем заметнее проявление категории в сценарии. Значения выше 60% обычно повышают возрастной рейтинг.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.blue,
-                        height: 1.3,
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.blue, height: 1.3),
                     ),
                   ),
                 ],

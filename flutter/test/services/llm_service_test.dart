@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:script_rating_app/services/llm_service.dart';
 import 'package:script_rating_app/models/llm_models.dart';
+import 'package:script_rating_app/models/llm_provider.dart';
 import 'test_utils.dart';
 
 void main() {
@@ -21,7 +22,7 @@ void main() {
       test('should initialize with correct base URL and headers when base URL is empty', () {
         final dio = Dio();
         final service = LlmService(dio);
-        
+
         expect(dio.options.baseUrl, 'http://localhost:8000/api/v1');
         expect(dio.options.headers['Content-Type'], 'application/json');
       });
@@ -29,18 +30,18 @@ void main() {
       test('should preserve existing base URL if provided', () {
         final dio = Dio();
         dio.options.baseUrl = 'https://custom-api.example.com/api/v2';
-        
+
         final service = LlmService(dio);
-        
+
         expect(dio.options.baseUrl, 'https://custom-api.example.com/api/v2');
       });
 
       test('should preserve existing headers and add Content-Type if missing', () {
         final dio = Dio();
         dio.options.headers['Authorization'] = 'Bearer token';
-        
+
         final service = LlmService(dio);
-        
+
         expect(dio.options.baseUrl, 'http://localhost:8000/api/v1');
         expect(dio.options.headers['Content-Type'], 'application/json');
         expect(dio.options.headers['Authorization'], 'Bearer token');
@@ -52,7 +53,7 @@ void main() {
         // Arrange
         final configJson = TestDataGenerator.createValidLLMConfigJson();
         final response = MockResponseFactory.createSuccessResponse(configJson);
-        
+
         when(() => mockDio.get('/llm/config')).thenAnswer((_) async => response);
 
         // Act
@@ -71,7 +72,7 @@ void main() {
         // Arrange
         final configJson = TestDataGenerator.createValidLLMConfigJson();
         final response = MockResponseFactory.createSuccessResponse(configJson);
-        
+
         when(() => mockDio.get('/llm/config')).thenAnswer((_) async => response);
 
         // Act
@@ -86,80 +87,57 @@ void main() {
       test('should handle malformed JSON response', () async {
         // Arrange
         final malformedResponse = MockResponseFactory.createSuccessResponse({'invalid': 'json'});
-        
+
         when(() => mockDio.get('/llm/config')).thenAnswer((_) async => malformedResponse);
 
         // Act & Assert
-        expect(
-          () => llmService.getConfig(),
-          throwsA(isA<TypeError>()),
-        );
+        expect(() => llmService.getConfig(), throwsA(isA<TypeError>()));
       });
 
       test('should handle network timeout', () async {
         // Arrange
-        when(() => mockDio.get('/llm/config'))
-            .thenThrow(DioException(
-              requestOptions: RequestOptions(path: '/llm/config'),
-              type: DioExceptionType.connectionTimeout,
-              message: 'Connection timeout',
-            ));
+        when(() => mockDio.get('/llm/config')).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(path: '/llm/config'),
+            type: DioExceptionType.connectionTimeout,
+            message: 'Connection timeout',
+          ),
+        );
 
         // Act & Assert
-        expect(
-          () => llmService.getConfig(),
-          throwsA(isA<DioException>()),
-        );
+        expect(() => llmService.getConfig(), throwsA(isA<DioException>()));
         verify(() => mockDio.get('/llm/config')).called(1);
       });
 
       test('should handle HTTP 500 Internal Server Error', () async {
         // Arrange
         when(() => mockDio.get('/llm/config')).thenThrow(
-          ErrorScenarios.createDioException(
-            statusCode: 500,
-            message: 'Internal server error',
-          ),
+          ErrorScenarios.createDioException(statusCode: 500, message: 'Internal server error'),
         );
 
         // Act & Assert
-        expect(
-          () => llmService.getConfig(),
-          throwsA(isA<DioException>()),
-        );
+        expect(() => llmService.getConfig(), throwsA(isA<DioException>()));
         verify(() => mockDio.get('/llm/config')).called(1);
       });
 
       test('should handle HTTP 404 Not Found', () async {
         // Arrange
-        when(() => mockDio.get('/llm/config')).thenThrow(
-          ErrorScenarios.createDioException(
-            statusCode: 404,
-            message: 'Not found',
-          ),
-        );
+        when(
+          () => mockDio.get('/llm/config'),
+        ).thenThrow(ErrorScenarios.createDioException(statusCode: 404, message: 'Not found'));
 
         // Act & Assert
-        expect(
-          () => llmService.getConfig(),
-          throwsA(isA<DioException>()),
-        );
+        expect(() => llmService.getConfig(), throwsA(isA<DioException>()));
       });
 
       test('should handle server unavailable (HTTP 503)', () async {
         // Arrange
         when(() => mockDio.get('/llm/config')).thenThrow(
-          ErrorScenarios.createDioException(
-            statusCode: 503,
-            message: 'Service unavailable',
-          ),
+          ErrorScenarios.createDioException(statusCode: 503, message: 'Service unavailable'),
         );
 
         // Act & Assert
-        expect(
-          () => llmService.getConfig(),
-          throwsA(isA<DioException>()),
-        );
+        expect(() => llmService.getConfig(), throwsA(isA<DioException>()));
       });
     });
 
@@ -180,7 +158,7 @@ void main() {
           ),
         ];
         final response = MockResponseFactory.createSuccessListResponse(statusesJson);
-        
+
         when(() => mockDio.get('/llm/status')).thenAnswer((_) async => response);
 
         // Act
@@ -223,7 +201,7 @@ void main() {
           ),
         ];
         final response = MockResponseFactory.createSuccessListResponse(statusesJson);
-        
+
         when(() => mockDio.get('/llm/status')).thenAnswer((_) async => response);
 
         // Act
@@ -240,30 +218,21 @@ void main() {
         final malformedResponse = MockResponseFactory.createSuccessListResponse([
           {'invalid': 'data'},
         ]);
-        
+
         when(() => mockDio.get('/llm/status')).thenAnswer((_) async => malformedResponse);
 
         // Act & Assert
-        expect(
-          () => llmService.getStatuses(),
-          throwsA(isA<TypeError>()),
-        );
+        expect(() => llmService.getStatuses(), throwsA(isA<TypeError>()));
       });
 
       test('should handle network errors gracefully', () async {
         // Arrange
         when(() => mockDio.get('/llm/status')).thenThrow(
-          ErrorScenarios.createDioException(
-            statusCode: 500,
-            message: 'Internal server error',
-          ),
+          ErrorScenarios.createDioException(statusCode: 500, message: 'Internal server error'),
         );
 
         // Act & Assert
-        expect(
-          () => llmService.getStatuses(),
-          throwsA(isA<Exception>()),
-        );
+        expect(() => llmService.getStatuses(), throwsA(isA<Exception>()));
       });
     });
 
@@ -272,7 +241,7 @@ void main() {
         // Arrange
         final modelsJson = TestDataGenerator.createValidLocalModelsJson();
         final response = MockResponseFactory.createSuccessResponse(modelsJson);
-        
+
         when(() => mockDio.get('/llm/local/models')).thenAnswer((_) async => response);
 
         // Act
@@ -347,10 +316,7 @@ void main() {
 
       test('should handle empty models list', () async {
         // Arrange
-        final emptyModelsJson = {
-          'models': [],
-          'loaded_models': [],
-        };
+        final emptyModelsJson = {'models': [], 'loaded_models': []};
         final response = MockResponseFactory.createSuccessResponse(emptyModelsJson);
         when(() => mockDio.get('/llm/local/models')).thenAnswer((_) async => response);
 
@@ -365,17 +331,11 @@ void main() {
       test('should handle server error for local models', () async {
         // Arrange
         when(() => mockDio.get('/llm/local/models')).thenThrow(
-          ErrorScenarios.createDioException(
-            statusCode: 500,
-            message: 'Internal server error',
-          ),
+          ErrorScenarios.createDioException(statusCode: 500, message: 'Internal server error'),
         );
 
         // Act & Assert
-        expect(
-          () => llmService.getLocalModels(),
-          throwsA(isA<DioException>()),
-        );
+        expect(() => llmService.getLocalModels(), throwsA(isA<DioException>()));
       });
     });
 
@@ -388,7 +348,7 @@ void main() {
           rateLimitRemaining: 50,
         );
         final response = MockResponseFactory.createSuccessResponse(statusJson);
-        
+
         when(() => mockDio.get('/llm/openrouter/status')).thenAnswer((_) async => response);
 
         // Act
@@ -447,17 +407,11 @@ void main() {
       test('should handle OpenRouter service unavailable', () async {
         // Arrange
         when(() => mockDio.get('/llm/openrouter/status')).thenThrow(
-          ErrorScenarios.createDioException(
-            statusCode: 503,
-            message: 'Service unavailable',
-          ),
+          ErrorScenarios.createDioException(statusCode: 503, message: 'Service unavailable'),
         );
 
         // Act & Assert
-        expect(
-          () => llmService.getOpenRouterStatus(),
-          throwsA(isA<DioException>()),
-        );
+        expect(() => llmService.getOpenRouterStatus(), throwsA(isA<DioException>()));
       });
     });
 
@@ -469,7 +423,7 @@ void main() {
           total: 4,
         );
         final response = MockResponseFactory.createSuccessResponse(modelsJson);
-        
+
         when(() => mockDio.get('/llm/openrouter/models')).thenAnswer((_) async => response);
 
         // Act
@@ -486,10 +440,7 @@ void main() {
 
       test('should handle empty models list', () async {
         // Arrange
-        final emptyModelsJson = {
-          'models': [],
-          'total': 0,
-        };
+        final emptyModelsJson = {'models': [], 'total': 0};
         final response = MockResponseFactory.createSuccessResponse(emptyModelsJson);
         when(() => mockDio.get('/llm/openrouter/models')).thenAnswer((_) async => response);
 
@@ -504,17 +455,11 @@ void main() {
       test('should handle API error for models fetch', () async {
         // Arrange
         when(() => mockDio.get('/llm/openrouter/models')).thenThrow(
-          ErrorScenarios.createDioException(
-            statusCode: 500,
-            message: 'Internal server error',
-          ),
+          ErrorScenarios.createDioException(statusCode: 500, message: 'Internal server error'),
         );
 
         // Act & Assert
-        expect(
-          () => llmService.getOpenRouterModels(),
-          throwsA(isA<DioException>()),
-        );
+        expect(() => llmService.getOpenRouterModels(), throwsA(isA<DioException>()));
       });
     });
 
@@ -530,7 +475,7 @@ void main() {
           systemHealthy: true,
         );
         final response = MockResponseFactory.createSuccessResponse(healthJson);
-        
+
         when(() => mockDio.get('/llm/config/health')).thenAnswer((_) async => response);
 
         // Act
@@ -573,17 +518,11 @@ void main() {
       test('should handle server error for health summary', () async {
         // Arrange
         when(() => mockDio.get('/llm/config/health')).thenThrow(
-          ErrorScenarios.createDioException(
-            statusCode: 500,
-            message: 'Internal server error',
-          ),
+          ErrorScenarios.createDioException(statusCode: 500, message: 'Internal server error'),
         );
 
         // Act & Assert
-        expect(
-          () => llmService.getHealthSummary(),
-          throwsA(isA<DioException>()),
-        );
+        expect(() => llmService.getHealthSummary(), throwsA(isA<DioException>()));
       });
     });
 
@@ -591,17 +530,14 @@ void main() {
       test('should successfully fetch performance reports', () async {
         // Arrange
         final reportsJson = [
-          TestDataGenerator.createValidPerformanceReportJson(
-            provider: 'local',
-            timeRange: '24h',
-          ),
+          TestDataGenerator.createValidPerformanceReportJson(provider: 'local', timeRange: '24h'),
           TestDataGenerator.createValidPerformanceReportJson(
             provider: 'open_router',
             timeRange: '24h',
           ),
         ];
         final response = MockResponseFactory.createSuccessListResponse(reportsJson);
-        
+
         when(() => mockDio.get('/llm/performance')).thenAnswer((_) async => response);
 
         // Act
@@ -633,17 +569,11 @@ void main() {
       test('should handle server error for performance reports', () async {
         // Arrange
         when(() => mockDio.get('/llm/performance')).thenThrow(
-          ErrorScenarios.createDioException(
-            statusCode: 500,
-            message: 'Internal server error',
-          ),
+          ErrorScenarios.createDioException(statusCode: 500, message: 'Internal server error'),
         );
 
         // Act & Assert
-        expect(
-          () => llmService.getPerformanceReports(),
-          throwsA(isA<DioException>()),
-        );
+        expect(() => llmService.getPerformanceReports(), throwsA(isA<DioException>()));
       });
     });
 
@@ -661,9 +591,10 @@ void main() {
           'last_used': '2023-01-01T00:00:00.000Z',
         };
         final response = MockResponseFactory.createSuccessResponse(modelInfoJson);
-        
-        when(() => mockDio.post('/llm/local/models/load', data: {'model_name': modelName}))
-            .thenAnswer((_) async => response);
+
+        when(
+          () => mockDio.post('/llm/local/models/load', data: {'model_name': modelName}),
+        ).thenAnswer((_) async => response);
 
         // Act
         final result = await llmService.loadLocalModel(modelName);
@@ -676,24 +607,19 @@ void main() {
         expect(result.contextWindow, 4096);
         expect(result.maxTokens, 2048);
         expect(result.lastUsed, isA<DateTime>());
-        verify(() => mockDio.post('/llm/local/models/load', data: {'model_name': modelName})).called(1);
+        verify(
+          () => mockDio.post('/llm/local/models/load', data: {'model_name': modelName}),
+        ).called(1);
       });
 
       test('should handle model loading failure', () async {
         // Arrange
-        when(() => mockDio.post('/llm/local/models/load', data: any(named: 'data')))
-            .thenThrow(
-              ErrorScenarios.createDioException(
-                statusCode: 400,
-                message: 'Model not found',
-              ),
-            );
+        when(
+          () => mockDio.post('/llm/local/models/load', data: any(named: 'data')),
+        ).thenThrow(ErrorScenarios.createDioException(statusCode: 400, message: 'Model not found'));
 
         // Act & Assert
-        expect(
-          () => llmService.loadLocalModel(modelName),
-          throwsA(isA<DioException>()),
-        );
+        expect(() => llmService.loadLocalModel(modelName), throwsA(isA<DioException>()));
         verify(() => mockDio.post('/llm/local/models/load', data: any(named: 'data'))).called(1);
       });
 
@@ -707,9 +633,10 @@ void main() {
           'max_tokens': 2048,
         };
         final response = MockResponseFactory.createSuccessResponse(alreadyLoadedJson);
-        
-        when(() => mockDio.post('/llm/local/models/load', data: {'model_name': modelName}))
-            .thenAnswer((_) async => response);
+
+        when(
+          () => mockDio.post('/llm/local/models/load', data: {'model_name': modelName}),
+        ).thenAnswer((_) async => response);
 
         // Act
         final result = await llmService.loadLocalModel(modelName);
@@ -720,19 +647,12 @@ void main() {
 
       test('should handle insufficient memory error', () async {
         // Arrange
-        when(() => mockDio.post('/llm/local/models/load', data: any(named: 'data')))
-            .thenThrow(
-              ErrorScenarios.createDioException(
-                statusCode: 507,
-                message: 'Insufficient memory',
-              ),
-            );
+        when(() => mockDio.post('/llm/local/models/load', data: any(named: 'data'))).thenThrow(
+          ErrorScenarios.createDioException(statusCode: 507, message: 'Insufficient memory'),
+        );
 
         // Act & Assert
-        expect(
-          () => llmService.loadLocalModel(modelName),
-          throwsA(isA<DioException>()),
-        );
+        expect(() => llmService.loadLocalModel(modelName), throwsA(isA<DioException>()));
       });
     });
 
@@ -749,9 +669,10 @@ void main() {
           'max_tokens': 2048,
         };
         final response = MockResponseFactory.createSuccessResponse(modelInfoJson);
-        
-        when(() => mockDio.post('/llm/local/models/unload', data: {'model_name': modelName}))
-            .thenAnswer((_) async => response);
+
+        when(
+          () => mockDio.post('/llm/local/models/unload', data: {'model_name': modelName}),
+        ).thenAnswer((_) async => response);
 
         // Act
         final result = await llmService.unloadLocalModel(modelName);
@@ -760,24 +681,19 @@ void main() {
         expect(result, isA<LocalModelInfo>());
         expect(result.modelName, modelName);
         expect(result.loaded, false);
-        verify(() => mockDio.post('/llm/local/models/unload', data: {'model_name': modelName})).called(1);
+        verify(
+          () => mockDio.post('/llm/local/models/unload', data: {'model_name': modelName}),
+        ).called(1);
       });
 
       test('should handle model not loaded error', () async {
         // Arrange
-        when(() => mockDio.post('/llm/local/models/unload', data: any(named: 'data')))
-            .thenThrow(
-              ErrorScenarios.createDioException(
-                statusCode: 400,
-                message: 'Model not loaded',
-              ),
-            );
+        when(() => mockDio.post('/llm/local/models/unload', data: any(named: 'data'))).thenThrow(
+          ErrorScenarios.createDioException(statusCode: 400, message: 'Model not loaded'),
+        );
 
         // Act & Assert
-        expect(
-          () => llmService.unloadLocalModel(modelName),
-          throwsA(isA<DioException>()),
-        );
+        expect(() => llmService.unloadLocalModel(modelName), throwsA(isA<DioException>()));
       });
     });
 
@@ -792,11 +708,13 @@ void main() {
           activeModel: modelName,
         );
         final response = MockResponseFactory.createSuccessResponse(configJson);
-        
-        when(() => mockDio.put(
-          '/llm/config/mode',
-          queryParameters: {'provider': provider.name, 'model_name': modelName},
-        )).thenAnswer((_) async => response);
+
+        when(
+          () => mockDio.put(
+            '/llm/config/mode',
+            queryParameters: {'provider': provider.name, 'model_name': modelName},
+          ),
+        ).thenAnswer((_) async => response);
 
         // Act
         final result = await llmService.switchMode(provider, modelName);
@@ -805,10 +723,12 @@ void main() {
         expect(result, isA<LLMConfigResponse>());
         expect(result.activeProvider, provider);
         expect(result.activeModel, modelName);
-        verify(() => mockDio.put(
-          '/llm/config/mode',
-          queryParameters: {'provider': provider.name, 'model_name': modelName},
-        )).called(1);
+        verify(
+          () => mockDio.put(
+            '/llm/config/mode',
+            queryParameters: {'provider': provider.name, 'model_name': modelName},
+          ),
+        ).called(1);
       });
 
       test('should successfully switch to OpenRouter model', () async {
@@ -820,11 +740,13 @@ void main() {
           activeModel: openRouterModel,
         );
         final response = MockResponseFactory.createSuccessResponse(configJson);
-        
-        when(() => mockDio.put(
-          '/llm/config/mode',
-          queryParameters: {'provider': openRouterProvider.name, 'model_name': openRouterModel},
-        )).thenAnswer((_) async => response);
+
+        when(
+          () => mockDio.put(
+            '/llm/config/mode',
+            queryParameters: {'provider': openRouterProvider.name, 'model_name': openRouterModel},
+          ),
+        ).thenAnswer((_) async => response);
 
         // Act
         final result = await llmService.switchMode(openRouterProvider, openRouterModel);
@@ -832,24 +754,20 @@ void main() {
         // Assert
         expect(result.activeProvider, openRouterProvider);
         expect(result.activeModel, openRouterModel);
-        verify(() => mockDio.put(
-          '/llm/config/mode',
-          queryParameters: {'provider': openRouterProvider.name, 'model_name': openRouterModel},
-        )).called(1);
+        verify(
+          () => mockDio.put(
+            '/llm/config/mode',
+            queryParameters: {'provider': openRouterProvider.name, 'model_name': openRouterModel},
+          ),
+        ).called(1);
       });
 
       test('should handle switch to non-existent model', () async {
         // Arrange
         const nonExistentModel = 'non-existent-model';
-        when(() => mockDio.put(
-          '/llm/config/mode',
-          queryParameters: anyNamed('queryParameters'),
-        )).thenThrow(
-          ErrorScenarios.createDioException(
-            statusCode: 404,
-            message: 'Model not found',
-          ),
-        );
+        when(
+          () => mockDio.put('/llm/config/mode', queryParameters: anyNamed('queryParameters')),
+        ).thenThrow(ErrorScenarios.createDioException(statusCode: 404, message: 'Model not found'));
 
         // Act & Assert
         expect(
@@ -860,21 +778,14 @@ void main() {
 
       test('should handle provider unavailable error', () async {
         // Arrange
-        when(() => mockDio.put(
-          '/llm/config/mode',
-          queryParameters: anyNamed('queryParameters'),
-        )).thenThrow(
-          ErrorScenarios.createDioException(
-            statusCode: 503,
-            message: 'Provider unavailable',
-          ),
+        when(
+          () => mockDio.put('/llm/config/mode', queryParameters: anyNamed('queryParameters')),
+        ).thenThrow(
+          ErrorScenarios.createDioException(statusCode: 503, message: 'Provider unavailable'),
         );
 
         // Act & Assert
-        expect(
-          () => llmService.switchMode(provider, modelName),
-          throwsA(isA<DioException>()),
-        );
+        expect(() => llmService.switchMode(provider, modelName), throwsA(isA<DioException>()));
       });
     });
 
@@ -885,15 +796,21 @@ void main() {
           activeProvider: 'local',
           activeModel: 'model1',
         );
-        when(() => mockDio.get('/llm/config'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(configJson));
+        when(
+          () => mockDio.get('/llm/config'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(configJson));
 
         // Arrange - Get statuses
         final statusesJson = [
-          TestDataGenerator.createValidLLMStatusJson(provider: 'local', available: true, healthy: true),
+          TestDataGenerator.createValidLLMStatusJson(
+            provider: 'local',
+            available: true,
+            healthy: true,
+          ),
         ];
-        when(() => mockDio.get('/llm/status'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessListResponse(statusesJson));
+        when(
+          () => mockDio.get('/llm/status'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessListResponse(statusesJson));
 
         // Arrange - Get local models
         final modelsJson = TestDataGenerator.createValidLocalModelsJson(
@@ -915,8 +832,9 @@ void main() {
           ],
           loadedModels: ['model1'],
         );
-        when(() => mockDio.get('/llm/local/models'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(modelsJson));
+        when(
+          () => mockDio.get('/llm/local/models'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(modelsJson));
 
         // Arrange - Load new model
         final loadResponse = {
@@ -926,18 +844,21 @@ void main() {
           'context_window': 4096,
           'max_tokens': 2048,
         };
-        when(() => mockDio.post('/llm/local/models/load', data: {'model_name': 'model2'}))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(loadResponse));
+        when(
+          () => mockDio.post('/llm/local/models/load', data: {'model_name': 'model2'}),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(loadResponse));
 
         // Arrange - Switch to new model
         final switchConfigJson = TestDataGenerator.createValidLLMConfigJson(
           activeProvider: 'local',
           activeModel: 'model2',
         );
-        when(() => mockDio.put(
-          '/llm/config/mode',
-          queryParameters: {'provider': 'local', 'model_name': 'model2'},
-        )).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(switchConfigJson));
+        when(
+          () => mockDio.put(
+            '/llm/config/mode',
+            queryParameters: {'provider': 'local', 'model_name': 'model2'},
+          ),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(switchConfigJson));
 
         // Act - Execute workflow
         final config = await llmService.getConfig();
@@ -959,8 +880,9 @@ void main() {
       test('should get LLM providers from config', () async {
         // Arrange
         final configJson = TestDataGenerator.createValidLLMConfigJson();
-        when(() => mockDio.get('/llm/config'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(configJson));
+        when(
+          () => mockDio.get('/llm/config'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(configJson));
 
         // Act
         final result = await llmService.getLLMProviders();
@@ -975,8 +897,9 @@ void main() {
       test('should get active provider', () async {
         // Arrange
         final configJson = TestDataGenerator.createValidLLMConfigJson();
-        when(() => mockDio.get('/llm/config'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(configJson));
+        when(
+          () => mockDio.get('/llm/config'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(configJson));
 
         // Act
         final result = await llmService.getActiveProvider();
@@ -989,8 +912,9 @@ void main() {
       test('should set active provider', () async {
         // Arrange
         final updateJson = TestDataGenerator.createValidLLMConfigJson(activeProvider: 'openrouter');
-        when(() => mockDio.put('/llm/config', data: anyNamed('data')))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(updateJson));
+        when(
+          () => mockDio.put('/llm/config', data: anyNamed('data')),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(updateJson));
 
         // Act
         await llmService.setActiveProvider(LLMProvider.openrouter);
@@ -1001,13 +925,9 @@ void main() {
 
       test('should handle set active provider error', () async {
         // Arrange
-        when(() => mockDio.put('/llm/config', data: anyNamed('data')))
-            .thenThrow(
-              ErrorScenarios.createDioException(
-                statusCode: 500,
-                message: 'Internal server error',
-              ),
-            );
+        when(() => mockDio.put('/llm/config', data: anyNamed('data'))).thenThrow(
+          ErrorScenarios.createDioException(statusCode: 500, message: 'Internal server error'),
+        );
 
         // Act & Assert
         expect(
@@ -1021,8 +941,9 @@ void main() {
       test('should get LLM models from config', () async {
         // Arrange
         final configJson = TestDataGenerator.createValidLLMConfigJson();
-        when(() => mockDio.get('/llm/config'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(configJson));
+        when(
+          () => mockDio.get('/llm/config'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(configJson));
 
         // Act
         final result = await llmService.getLLMModels();
@@ -1035,8 +956,9 @@ void main() {
       test('should get active model', () async {
         // Arrange
         final configJson = TestDataGenerator.createValidLLMConfigJson();
-        when(() => mockDio.get('/llm/config'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(configJson));
+        when(
+          () => mockDio.get('/llm/config'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(configJson));
 
         // Act
         final result = await llmService.getActiveModel();
@@ -1049,24 +971,25 @@ void main() {
       test('should set active model', () async {
         // Arrange
         final updateJson = TestDataGenerator.createValidLLMConfigJson(activeModel: 'new-model');
-        when(() => mockDio.put('/llm/config', data: anyNamed('data')))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(updateJson));
+        when(
+          () => mockDio.put('/llm/config', data: anyNamed('data')),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(updateJson));
 
         // Act
         await llmService.setActiveModel('new-model', provider: LLMProvider.local);
 
         // Assert
-        verify(() => mockDio.put('/llm/config', data: {
-          'model_name': 'new-model',
-          'provider': 'local',
-        })).called(1);
+        verify(
+          () => mockDio.put('/llm/config', data: {'model_name': 'new-model', 'provider': 'local'}),
+        ).called(1);
       });
 
       test('should get models by provider', () async {
         // Arrange
         final configJson = TestDataGenerator.createValidLLMConfigJson();
-        when(() => mockDio.get('/llm/config'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(configJson));
+        when(
+          () => mockDio.get('/llm/config'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(configJson));
 
         final models = await llmService.getLLMModels();
 
@@ -1087,8 +1010,9 @@ void main() {
           available: true,
           healthy: true,
         );
-        when(() => mockDio.get('/llm/status/local'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(statusJson));
+        when(
+          () => mockDio.get('/llm/status/local'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(statusJson));
 
         // Act
         final result = await llmService.getProviderStatus(LLMProvider.local);
@@ -1103,11 +1027,20 @@ void main() {
       test('should check providers health', () async {
         // Arrange
         final statusesJson = [
-          TestDataGenerator.createValidLLMStatusJson(provider: 'local', available: true, healthy: true),
-          TestDataGenerator.createValidLLMStatusJson(provider: 'openrouter', available: true, healthy: false),
+          TestDataGenerator.createValidLLMStatusJson(
+            provider: 'local',
+            available: true,
+            healthy: true,
+          ),
+          TestDataGenerator.createValidLLMStatusJson(
+            provider: 'openrouter',
+            available: true,
+            healthy: false,
+          ),
         ];
-        when(() => mockDio.get('/llm/status'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessListResponse(statusesJson));
+        when(
+          () => mockDio.get('/llm/status'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessListResponse(statusesJson));
 
         // Act
         final result = await llmService.checkProvidersHealth();
@@ -1120,19 +1053,12 @@ void main() {
 
       test('should handle provider status error', () async {
         // Arrange
-        when(() => mockDio.get('/llm/status/local'))
-            .thenThrow(
-              ErrorScenarios.createDioException(
-                statusCode: 500,
-                message: 'Internal server error',
-              ),
-            );
+        when(() => mockDio.get('/llm/status/local')).thenThrow(
+          ErrorScenarios.createDioException(statusCode: 500, message: 'Internal server error'),
+        );
 
         // Act & Assert
-        expect(
-          () => llmService.getProviderStatus(LLMProvider.local),
-          throwsA(isA<Exception>()),
-        );
+        expect(() => llmService.getProviderStatus(LLMProvider.local), throwsA(isA<Exception>()));
       });
     });
 
@@ -1144,8 +1070,9 @@ void main() {
           'successful_requests': 95,
           'average_response_time_ms': 150.0,
         };
-        when(() => mockDio.get('/llm/performance/local'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(metricsJson));
+        when(
+          () => mockDio.get('/llm/performance/local'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(metricsJson));
 
         // Act
         final result = await llmService.getProviderMetrics(LLMProvider.local);
@@ -1159,17 +1086,12 @@ void main() {
       test('should get all providers metrics', () async {
         // Arrange
         final metricsJson = {
-          'local': {
-            'total_requests': 100,
-            'successful_requests': 95,
-          },
-          'openrouter': {
-            'total_requests': 200,
-            'successful_requests': 180,
-          },
+          'local': {'total_requests': 100, 'successful_requests': 95},
+          'openrouter': {'total_requests': 200, 'successful_requests': 180},
         };
-        when(() => mockDio.get('/llm/performance'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(metricsJson));
+        when(
+          () => mockDio.get('/llm/performance'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(metricsJson));
 
         // Act
         final result = await llmService.getAllProvidersMetrics();
@@ -1182,11 +1104,10 @@ void main() {
 
       test('should get system health', () async {
         // Arrange
-        final healthJson = TestDataGenerator.createValidHealthSummaryJson(
-          systemHealthy: true,
-        );
-        when(() => mockDio.get('/llm/config/health'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(healthJson));
+        final healthJson = TestDataGenerator.createValidHealthSummaryJson(systemHealthy: true);
+        when(
+          () => mockDio.get('/llm/config/health'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(healthJson));
 
         // Act
         final result = await llmService.getSystemHealth();
@@ -1209,8 +1130,9 @@ void main() {
           'response_time_ms': 500.0,
           'success': true,
         };
-        when(() => mockDio.post('/llm/test', data: anyNamed('data')))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(testJson));
+        when(
+          () => mockDio.post('/llm/test', data: anyNamed('data')),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(testJson));
 
         // Act
         final result = await llmService.testLLM('Hello, world!');
@@ -1233,8 +1155,9 @@ void main() {
           'response_time_ms': 300.0,
           'success': true,
         };
-        when(() => mockDio.post('/llm/test', data: anyNamed('data')))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(testJson));
+        when(
+          () => mockDio.post('/llm/test', data: anyNamed('data')),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(testJson));
 
         // Act
         final result = await llmService.testLLM('Test prompt', modelName: 'gpt-4');
@@ -1246,19 +1169,12 @@ void main() {
 
       test('should handle test LLM failure', () async {
         // Arrange
-        when(() => mockDio.post('/llm/test', data: anyNamed('data')))
-            .thenThrow(
-              ErrorScenarios.createDioException(
-                statusCode: 500,
-                message: 'Test failed',
-              ),
-            );
+        when(
+          () => mockDio.post('/llm/test', data: anyNamed('data')),
+        ).thenThrow(ErrorScenarios.createDioException(statusCode: 500, message: 'Test failed'));
 
         // Act & Assert
-        expect(
-          () => llmService.testLLM('Test prompt'),
-          throwsA(isA<Exception>()),
-        );
+        expect(() => llmService.testLLM('Test prompt'), throwsA(isA<Exception>()));
       });
     });
 
@@ -1266,8 +1182,9 @@ void main() {
       test('should update config with provider', () async {
         // Arrange
         final updateJson = TestDataGenerator.createValidLLMConfigJson(activeProvider: 'openrouter');
-        when(() => mockDio.put('/llm/config', data: anyNamed('data')))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(updateJson));
+        when(
+          () => mockDio.put('/llm/config', data: anyNamed('data')),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(updateJson));
 
         // Act
         final result = await llmService.updateConfig(provider: LLMProvider.openrouter);
@@ -1280,8 +1197,9 @@ void main() {
       test('should update config with model name', () async {
         // Arrange
         final updateJson = TestDataGenerator.createValidLLMConfigJson(activeModel: 'new-model');
-        when(() => mockDio.put('/llm/config', data: anyNamed('data')))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(updateJson));
+        when(
+          () => mockDio.put('/llm/config', data: anyNamed('data')),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(updateJson));
 
         // Act
         final result = await llmService.updateConfig(modelName: 'new-model');
@@ -1299,8 +1217,9 @@ void main() {
           timeout: 60,
         );
         final updateJson = TestDataGenerator.createValidLLMConfigJson();
-        when(() => mockDio.put('/llm/config', data: anyNamed('data')))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(updateJson));
+        when(
+          () => mockDio.put('/llm/config', data: anyNamed('data')),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(updateJson));
 
         // Act
         await llmService.updateProviderSettings(settings);
@@ -1312,15 +1231,12 @@ void main() {
       test('should configure OpenRouter', () async {
         // Arrange
         final updateJson = TestDataGenerator.createValidLLMConfigJson();
-        when(() => mockDio.put('/llm/config', data: anyNamed('data')))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(updateJson));
+        when(
+          () => mockDio.put('/llm/config', data: anyNamed('data')),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(updateJson));
 
         // Act
-        await llmService.configureOpenRouter(
-          apiKey: 'test-key',
-          timeout: 60,
-          maxRetries: 5,
-        );
+        await llmService.configureOpenRouter(apiKey: 'test-key', timeout: 60, maxRetries: 5);
 
         // Assert
         verify(() => mockDio.put('/llm/config', data: anyNamed('data'))).called(1);
@@ -1335,8 +1251,9 @@ void main() {
           available: true,
           healthy: true,
         );
-        when(() => mockDio.get('/llm/status/local'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(statusJson));
+        when(
+          () => mockDio.get('/llm/status/local'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(statusJson));
 
         // Act
         final result = await llmService.testConnection(LLMProvider.local);
@@ -1347,8 +1264,7 @@ void main() {
 
       test('should handle connection test failure', () async {
         // Arrange
-        when(() => mockDio.get('/llm/status/local'))
-            .thenThrow(Exception('Connection failed'));
+        when(() => mockDio.get('/llm/status/local')).thenThrow(Exception('Connection failed'));
 
         // Act
         final result = await llmService.testConnection(LLMProvider.local);
@@ -1360,8 +1276,9 @@ void main() {
       test('should test OpenRouter connection', () async {
         // Arrange
         final statusJson = TestDataGenerator.createValidOpenRouterStatusJson(connected: true);
-        when(() => mockDio.get('/llm/openrouter/status'))
-            .thenAnswer((_) async => MockResponseFactory.createSuccessResponse(statusJson));
+        when(
+          () => mockDio.get('/llm/openrouter/status'),
+        ).thenAnswer((_) async => MockResponseFactory.createSuccessResponse(statusJson));
 
         // Act
         final result = await llmService.testOpenRouterConnection();
@@ -1372,8 +1289,7 @@ void main() {
 
       test('should handle OpenRouter connection test failure', () async {
         // Arrange
-        when(() => mockDio.get('/llm/openrouter/status'))
-            .thenThrow(Exception('Connection failed'));
+        when(() => mockDio.get('/llm/openrouter/status')).thenThrow(Exception('Connection failed'));
 
         // Act
         final result = await llmService.testOpenRouterConnection();
