@@ -5,14 +5,13 @@ Simplified LLM configuration and management routes with just two modes: Local an
 This module provides the simplest possible endpoints for managing LLM providers.
 """
 import asyncio
-import os
-import random
 import logging
+import random
+import os
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
 
 from app.presentation.api.schemas import (
     LLMConfigResponse,
@@ -24,59 +23,80 @@ from app.presentation.api.schemas import (
     LLMTestRequest,
     LLMTestResponse,
     LocalModelInfo,
+    LocalModelsListResponse,
+    LoadModelRequest,
+    OpenRouterStatusResponse,
+    UnloadModelRequest,
 )
 
 logger = logging.getLogger(__name__)
 
+router = APIRouter()
+
 # Simple provider configuration - just two modes
 class SimpleProviderConfig:
     def __init__(self):
-        # OpenRouter configuration from environment (using the enhanced settings)
-        from app.config import settings
-        self.openrouter_api_key = settings.get_openrouter_api_key()
-        self.openrouter_base_model = settings.get_openrouter_base_model()
+        # OpenRouter configuration from environment
+        self.openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
         self.openrouter_base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
         
-        # Default active configuration
-        self.active_mode = "local"
-        self.active_model = "llama2:7b"
-        
-        # Check if OpenRouter is configured
+        # Provider availability
+        self.local_available = True  # Always available as placeholder
         self.openrouter_available = bool(self.openrouter_api_key)
         
-        # Local provider availability (mocked for now)
-        self.local_available = True
-
-    @property
-    def is_openrouter_configured(self) -> bool:
-        """Check if OpenRouter is properly configured."""
-        return self.openrouter_available
+        # Active mode
+        self.active_mode = "local"
+        self.active_model = "llama2:7b"
 
 # Global configuration instance
 config = SimpleProviderConfig()
 
-# Simple models configuration
+# Mock models for simple two-mode setup
 SIMPLE_MODELS = {
     "llama2:7b": {
         "model_name": "llama2:7b",
         "provider": "local",
         "context_window": 4096,
+        "max_tokens": 2048,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "frequency_penalty": 0.0,
+        "presence_penalty": 0.0,
     },
     "gpt-3.5-turbo": {
         "model_name": "gpt-3.5-turbo",
         "provider": "openrouter",
         "context_window": 4096,
+        "max_tokens": 2048,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "frequency_penalty": 0.0,
+        "presence_penalty": 0.0,
     },
     "minimax/minimax-m2:free": {
         "model_name": "minimax/minimax-m2:free",
         "provider": "openrouter",
         "context_window": 4096,
-    },
+        "max_tokens": 2048,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "frequency_penalty": 0.0,
+        "presence_penalty": 0.0,
+    }
 }
 
-router = APIRouter()
+# Mock local models
+SIMPLE_LOCAL_MODELS = {
+    "llama2:7b": {
+        "model_name": "llama2:7b",
+        "size_gb": 3.9,
+        "loaded": True,
+        "context_window": 4096,
+        "max_tokens": 2048,
+        "last_used": datetime.utcnow()
+    }
+}
 
-# Configuration Endpoints
 
 @router.get("/providers")
 async def get_llm_providers():
@@ -87,6 +107,7 @@ async def get_llm_providers():
         "providers": ["local", "openrouter"],
         "active_provider": config.active_mode
     }
+
 
 @router.get("/models")
 async def get_llm_models():
@@ -104,6 +125,7 @@ async def get_llm_models():
         "models_by_provider": models_by_provider,
     }
 
+
 @router.get("/config")
 async def get_llm_config():
     """
@@ -115,6 +137,8 @@ async def get_llm_config():
             "available": config.local_available,
             "configured": True,
             "base_url": "http://localhost:11434",
+            "timeout": 30,
+            "max_retries": 3,
         },
         "openrouter": {
             "provider": "openrouter",
@@ -122,6 +146,7 @@ async def get_llm_config():
             "configured": config.openrouter_available,
             "base_url": config.openrouter_base_url,
             "timeout": 30,
+            "max_retries": 3,
         }
     }
 
@@ -130,9 +155,8 @@ async def get_llm_config():
         "active_model": config.active_model,
         "providers": providers,
         "models": SIMPLE_MODELS,
-        "openrouter_api_key_configured": config.openrouter_available,
-        "openrouter_base_model": config.openrouter_base_model,
     }
+
 
 @router.put("/config")
 async def update_llm_config(config_update: LLMConfigUpdateRequest):
@@ -164,6 +188,7 @@ async def update_llm_config(config_update: LLMConfigUpdateRequest):
 
     return await get_llm_config()
 
+
 @router.put("/config/mode")
 async def switch_llm_mode(provider: str, model_name: str = None):
     """
@@ -184,15 +209,11 @@ async def switch_llm_mode(provider: str, model_name: str = None):
                 detail="Provider must be 'local' or 'openrouter'"
             )
 
-        # Check provider availability with detailed error
+        # Check provider availability
         if provider == "openrouter" and not config.openrouter_available:
-            api_key_status = "not configured"
-            if config.openrouter_api_key:
-                api_key_status = f"configured ({config.openrouter_api_key[:8]}...)"
-            
             raise HTTPException(
                 status_code=400,
-                detail=f"OpenRouter is not available. API Key Status: {api_key_status}. Please check your .env configuration."
+                detail="OpenRouter is not configured. Please set OPENROUTER_API_KEY in your .env file."
             )
 
         # Validate model
@@ -201,8 +222,7 @@ async def switch_llm_mode(provider: str, model_name: str = None):
             model_name = "llama2:7b" if provider == "local" else "gpt-3.5-turbo"
 
         if model_name not in SIMPLE_MODELS:
-            available_models = list(SIMPLE_MODELS.keys())
-            raise HTTPException(status_code=400, detail=f"Model '{model_name}' not available. Available: {available_models}")
+            raise HTTPException(status_code=400, detail="Model not available")
 
         model_provider = SIMPLE_MODELS[model_name]["provider"]
         if model_provider != provider:
@@ -228,7 +248,6 @@ async def switch_llm_mode(provider: str, model_name: str = None):
             detail=f"Failed to switch provider mode: {str(e)}"
         )
 
-# Status and Health Endpoints
 
 @router.get("/status/{provider}")
 async def get_llm_status(provider: str):
@@ -247,14 +266,7 @@ async def get_llm_status(provider: str):
     else:  # openrouter
         is_available = config.openrouter_available
         response_time = random.uniform(100, 300) if is_available else None
-        
-        if not is_available:
-            if config.openrouter_api_key:
-                error_message = f"OpenRouter API key configured but service unavailable"
-            else:
-                error_message = "OpenRouter not configured - API key missing"
-        else:
-            error_message = None
+        error_message = None if is_available else "OpenRouter not configured"
 
     return {
         "provider": provider,
@@ -264,6 +276,7 @@ async def get_llm_status(provider: str):
         "error_message": error_message,
         "last_checked_at": datetime.utcnow(),
     }
+
 
 @router.get("/status")
 async def get_all_llm_status():
@@ -277,7 +290,6 @@ async def get_all_llm_status():
 
     return statuses
 
-# Testing and Health
 
 @router.post("/test")
 async def test_llm(test_request: LLMTestRequest):
@@ -291,99 +303,55 @@ async def test_llm(test_request: LLMTestRequest):
 
     model_config = SIMPLE_MODELS[model_name]
     provider = model_config["provider"]
-
+    
     # Check if provider is available
     if provider == "openrouter" and not config.openrouter_available:
         raise HTTPException(status_code=503, detail="OpenRouter is not configured")
-
+    
     if provider == "local" and not config.local_available:
         raise HTTPException(status_code=503, detail="Local provider is not available")
 
     # Simulate LLM processing
     await asyncio.sleep(random.uniform(0.5, 2.0))
 
-    # Mock response based on provider
-    if provider == "local":
-        mock_responses = [
-            "This is a local test response. I understand your question.",
-            "Local model responding: Here's what I think about that.",
-            "Local LLM test: Processing completed successfully."
-        ]
-    else:
-        mock_responses = [
-            "This is an OpenRouter test response. I understand your question.",
-            "OpenRouter model responding: Here's what I think about that.",
-            "OpenRouter LLM test: Processing completed successfully."
-        ]
+    # Simple mock responses
+    mock_responses = [
+        "I understand your question. Let me help you with that.",
+        "Based on my analysis, I can provide insights about this topic.",
+        "The content appears to be appropriate for the intended audience.",
+        "After careful consideration, here's my assessment..."
+    ]
 
     response = random.choice(mock_responses)
-    tokens_used = len(response.split()) * 1.3  # Rough estimation
-    response_time = random.uniform(500, 2000)  # Response time in ms
+    tokens_used = len(response.split()) * 2
+    response_time = random.uniform(500, 2000)
 
-    return LLMTestResponse(
-        model_name=model_name,
-        provider=provider,
-        prompt=test_request.prompt,
-        response=response,
-        tokens_used=int(tokens_used),
-        response_time_ms=response_time,
-        success=True
-    )
+    return {
+        "model_name": model_name,
+        "provider": provider,
+        "prompt": test_request.prompt,
+        "response": response,
+        "tokens_used": tokens_used,
+        "response_time_ms": response_time,
+        "success": True
+    }
+
 
 @router.get("/local/models")
 async def get_local_models():
     """
-    Get information about local models - simplified.
+    Get list of available local models - simplified.
     """
     return {
-        "loaded_models": ["llama2:7b"],
-        "available_models": ["llama2:7b"],
-        "total_models": 1,
-        "memory_usage_mb": 2048,
-        "status": "running"
+        "models": list(SIMPLE_LOCAL_MODELS.values()),
+        "loaded_models": [name for name, info in SIMPLE_LOCAL_MODELS.items() if info["loaded"]]
     }
 
-@router.post("/local/models/load")
-async def load_local_model(request: Dict[str, Any]):
-    """
-    Load a local model - simplified.
-    """
-    model_name = request.get("model_name")
-    if model_name not in ["llama2:7b"]:
-        raise HTTPException(status_code=400, detail="Model not available for local loading")
-    
-    # Simulate model loading
-    await asyncio.sleep(random.uniform(1.0, 3.0))
-    
-    return {
-        "model_name": model_name,
-        "status": "loaded",
-        "memory_usage_mb": 2048,
-        "load_time_seconds": random.uniform(2.0, 5.0)
-    }
-
-@router.post("/local/models/unload")
-async def unload_local_model(request: Dict[str, Any]):
-    """
-    Unload a local model - simplified.
-    """
-    model_name = request.get("model_name")
-    if model_name not in ["llama2:7b"]:
-        raise HTTPException(status_code=400, detail="Model not available for local unloading")
-    
-    # Simulate model unloading
-    await asyncio.sleep(random.uniform(0.5, 1.0))
-    
-    return {
-        "model_name": model_name,
-        "status": "unloaded",
-        "freed_memory_mb": 1024
-    }
 
 @router.get("/openrouter/status")
 async def get_openrouter_status():
     """
-    Get OpenRouter status - simplified.
+    Check OpenRouter status - simplified.
     """
     return {
         "connected": config.openrouter_available,
@@ -392,16 +360,6 @@ async def get_openrouter_status():
         "error_message": None if config.openrouter_available else "OpenRouter API key not configured",
     }
 
-@router.get("/openrouter/models")
-async def get_openrouter_models():
-    """
-    Get OpenRouter models - simplified.
-    """
-    return {
-        "models": ["gpt-3.5-turbo", "minimax/minimax-m2:free"],
-        "total": 2,
-        "cached": True
-    }
 
 @router.get("/config/health")
 async def get_llm_health_summary():
@@ -416,11 +374,12 @@ async def get_llm_health_summary():
                 "healthy": config.local_available
             },
             {
-                "provider": "openrouter",
+                "provider": "openrouter", 
                 "available": config.openrouter_available,
                 "healthy": config.openrouter_available
             }
         ],
+        "local_models_loaded": 1,
         "local_models_available": 1,
         "openrouter_connected": config.openrouter_available,
         "active_provider": config.active_mode,
@@ -428,40 +387,26 @@ async def get_llm_health_summary():
         "system_healthy": config.local_available or config.openrouter_available
     }
 
-# Performance Monitoring (simplified)
-
-@router.get("/performance")
-async def get_performance_metrics():
-    """
-    Get performance metrics - simplified.
-    """
-    # Mock performance data based on active provider
-    multiplier = random.uniform(0.8, 1.2)
-    
-    return {
-        "total_requests": int(100 * multiplier),
-        "successful_requests": int(95 * multiplier),
-        "failed_requests": int(5 * multiplier),
-        "average_response_time_ms": random.uniform(800, 1200),
-        "tokens_per_second": random.uniform(15, 25),
-        "cost_usd": random.uniform(0.01, 0.05) if config.active_mode == "openrouter" else 0.0,
-        "active_sessions": max(1, int(2 * multiplier)),
-        "total_cost": 0.0 if config.active_mode == "local" else 0.05 * multiplier,
-    }
 
 @router.get("/usage")
-async def get_usage_statistics():
+async def get_system_usage_stats(time_range: str = "24h"):
     """
-    Get usage statistics - simplified.
+    Get system-wide usage statistics - simplified.
     """
+    multiplier = {"1h": 0.1, "24h": 1.0, "7d": 7.0, "30d": 30.0}.get(time_range, 1.0)
+    
     return {
-        "total_requests": 150,
-        "successful_requests": 142,
-        "failed_requests": 8,
-        "total_tokens_used": 15420,
-        "average_response_time_ms": 1050.5,
-        "requests_per_hour": 12,
-        "cost_usd": 0.25,
-        "most_used_provider": config.active_mode,
-        "most_used_model": config.active_model,
+        "time_range": time_range,
+        "generated_at": datetime.utcnow(),
+        "system_stats": {
+            "total_requests": int(100 * multiplier),
+            "successful_requests": int(95 * multiplier),
+            "failed_requests": int(5 * multiplier),
+            "total_tokens_used": int(15000 * multiplier),
+            "average_response_time_ms": 750.0,
+            "error_rate": 5.0,
+            "uptime_percentage": 98.0,
+            "active_sessions": max(1, int(2 * multiplier)),
+            "total_cost": 0.0 if config.active_mode == "local" else 0.05 * multiplier,
+        }
     }

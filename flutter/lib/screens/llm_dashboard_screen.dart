@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/llm_dashboard_provider.dart';
-import '../models/llm_models.dart';
-import '../models/llm_provider.dart';
-import '../widgets/llm_dashboard/provider_config_card.dart';
-import '../widgets/llm_dashboard/model_selector.dart';
+import '../widgets/llm_dashboard/simple_provider_switcher.dart';
 import '../widgets/llm_dashboard/provider_status_card.dart';
 import '../widgets/llm_dashboard/test_connection_widget.dart';
-import '../widgets/llm_dashboard/settings_panel.dart';
 import '../widgets/llm_dashboard/stats_display.dart';
 
 class LlmDashboardScreen extends ConsumerStatefulWidget {
@@ -26,11 +22,11 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       setState(() {
         _selectedTabIndex = _tabController.index;
-        _showFloatingActionButton = _selectedTabIndex == 3; // Show FAB only for chat tab
+        _showFloatingActionButton = _selectedTabIndex == 2; // Show FAB only for chat tab
       });
     });
   }
@@ -47,7 +43,7 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('LLM Configuration & Testing Dashboard'),
+        title: const Text('LLM Provider Configuration'),
         elevation: 2,
         bottom: TabBar(
           controller: _tabController,
@@ -56,10 +52,9 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
           unselectedLabelColor: Colors.white70,
           indicatorColor: Colors.white,
           tabs: const [
-            Tab(icon: Icon(Icons.settings), text: 'Configuration'),
+            Tab(icon: Icon(Icons.tune), text: 'Provider Setup'),
             Tab(icon: Icon(Icons.speed), text: 'Status & Testing'),
             Tab(icon: Icon(Icons.analytics), text: 'Analytics'),
-            Tab(icon: Icon(Icons.chat), text: 'Chat Interface'),
           ],
         ),
         actions: [
@@ -97,7 +92,6 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
         _buildConfigurationTab(state),
         _buildStatusTestingTab(state),
         _buildAnalyticsTab(state),
-        _buildChatInterfaceTab(state),
       ],
     );
   }
@@ -111,32 +105,17 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
           _buildOverviewCard(state),
           const SizedBox(height: 16),
 
-          // Provider Configuration
-          ProviderConfigCard(
-            config: state.config,
-            providerSettings: state.config.activeProviderSettings,
+          // Simple Provider Switcher
+          SimpleProviderSwitcher(
+            currentProvider: state.config['active_provider'] as String,
+            openRouterConfigured: _isOpenRouterConfigured(state),
+            isLoading: state.isRefreshing,
             onSwitchProvider: (provider) => _switchProvider(provider),
-            onConfigureProvider: (apiKey, baseUrl) => _configureProvider(apiKey, baseUrl),
-            isLoading: state.isRefreshing,
           ),
           const SizedBox(height: 16),
 
-          // Model Selection
-          ModelSelector(
-            config: state.config,
-            activeModel: state.config.activeModel,
-            onModelChanged: (modelName) => _switchModel(modelName),
-            isLoading: state.isRefreshing,
-          ),
-          const SizedBox(height: 16),
-
-          // Settings Panel
-          SettingsPanel(
-            config: state.config,
-            configurationSettings: state.configurationSettings,
-            onSettingsUpdated: (settings) => _updateSettings(settings),
-            isLoading: state.isRefreshing,
-          ),
+          // System Status
+          _buildSystemStatusCard(state),
         ],
       ),
     );
@@ -156,10 +135,10 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
           const SizedBox(height: 16),
 
           // Test Connection Widget
-          if (state.config.activeProvider != null)
+          if (state.config['active_provider'] != null)
             TestConnectionWidget(
-              provider: state.config.activeProvider,
-              modelName: state.config.activeModel,
+              provider: state.config['active_provider'],
+              modelName: state.config['active_model'],
               onTestComplete: (prompt, response) => _handleTestComplete(prompt, response),
               onTestConnection: (provider) => _testConnection(provider),
               isLoading: state.isRefreshing,
@@ -179,16 +158,12 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
           child: StatsDisplay(
             providerStatuses: _getProviderStatusMap(state.statuses),
             usageStats: usageStats,
-            performanceReports: state.performanceReports,
+            performanceReports: [],
             isLoading: state.isRefreshing,
           ),
         );
       },
     );
-  }
-
-  Widget _buildChatInterfaceTab(dynamic state) {
-    return const Center(child: Text('Chat Interface - Coming Soon'));
   }
 
   Widget _buildOverviewCard(dynamic state) {
@@ -207,11 +182,11 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: state.healthSummary.systemHealthy ? Colors.green : Colors.orange,
+                    color: _isSystemHealthy(state) ? Colors.green : Colors.orange,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    state.healthSummary.systemHealthy ? 'Healthy' : 'Issues Detected',
+                    _isSystemHealthy(state) ? 'Healthy' : 'Issues Detected',
                     style: const TextStyle(color: Colors.white, fontSize: 12),
                   ),
                 ),
@@ -223,24 +198,50 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
                 Expanded(
                   child: _buildMetric(
                     'Active Provider',
-                    state.config.activeProvider.value,
-                    Icons.cloud,
+                    state.config['active_provider'] as String,
+                    Icons.tune,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildMetric(
                     'Active Model',
-                    state.config.activeModel,
+                    state.config['active_model'] as String,
                     Icons.model_training,
                   ),
                 ),
                 const SizedBox(width: 16),
-                Expanded(
-                  child: _buildMetric(
-                    'Available Models',
-                    state.config.models.length.toString(),
-                    Icons.list,
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSystemStatusCard(dynamic state) {
+    final openRouterConfigured = _isOpenRouterConfigured(state);
+    final activeProvider = state.config['active_provider'] as String;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('System Configuration', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(
+                  activeProvider == 'local' ? Icons.computer : Icons.cloud,
+                  color: activeProvider == 'local' ? Colors.blue : Colors.orange,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Mode: ${activeProvider.toUpperCase()}',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: activeProvider == 'local' ? Colors.blue : Colors.orange,
                   ),
                 ),
               ],
@@ -248,22 +249,27 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
             const SizedBox(height: 8),
             Row(
               children: [
-                Expanded(
-                  child: _buildMetric(
-                    'Healthy Providers',
-                    '${state.statuses.where((LLMStatusResponse s) => s.healthy).length}/${state.statuses.length}',
-                    Icons.health_and_safety,
-                  ),
+                Icon(
+                  openRouterConfigured ? Icons.check_circle : Icons.warning,
+                  color: openRouterConfigured ? Colors.green : Colors.orange,
+                  size: 16,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildMetric(
-                    'Configured Providers',
-                    state.config.providers.length.toString(),
-                    Icons.settings,
+                const SizedBox(width: 4),
+                Text(
+                  openRouterConfigured ? 'OpenRouter API configured' : 'OpenRouter not configured',
+                  style: TextStyle(
+                    color: openRouterConfigured ? Colors.green : Colors.orange,
+                    fontSize: 12,
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              activeProvider == 'local'
+                  ? 'Using local models. Future integration with Ollama planned.'
+                  : 'Using OpenRouter API with cloud-based models.',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
         ),
@@ -321,13 +327,37 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
     );
   }
 
-  // Action handlers
-  Future<void> _switchProvider(LLMProvider provider) async {
+  // Helper methods
+  bool _isOpenRouterConfigured(dynamic state) {
+    try {
+      final providers = state.config['providers'] as Map<String, dynamic>;
+      final openRouterConfig = providers['openrouter'] as Map<String, dynamic>;
+      return openRouterConfig['configured'] as bool;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  bool _isSystemHealthy(dynamic state) {
+    try {
+      final healthSummary = state.healthSummary as Map<String, dynamic>;
+      return healthSummary['system_healthy'] as bool;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Map<String, Map<String, dynamic>> _getProviderStatusMap(List<Map<String, dynamic>> statuses) {
+    return {for (final status in statuses) status['provider'] as String: status};
+  }
+
+  // Action handlers (simplified to work with string providers)
+  Future<void> _switchProvider(String provider) async {
     try {
       await ref.read(llmDashboardProvider.notifier).switchActiveProvider(provider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Switched to ${provider.value}'), backgroundColor: Colors.green),
+          SnackBar(content: Text('Switched to $provider'), backgroundColor: Colors.green),
         );
       }
     } catch (e) {
@@ -356,29 +386,7 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
     }
   }
 
-  Future<void> _configureProvider(String apiKey, String baseUrl) async {
-    try {
-      await ref
-          .read(llmDashboardProvider.notifier)
-          .configureProvider(LLMProvider.openrouter, apiKey, baseUrl);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Provider configured successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to configure provider: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
-
-  Future<void> _testConnection(LLMProvider provider) async {
+  Future<void> _testConnection(String provider) async {
     try {
       final isConnected = await ref
           .read(llmDashboardProvider.notifier)
@@ -386,7 +394,7 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${provider.value} connection: ${isConnected ? 'Successful' : 'Failed'}'),
+            content: Text('$provider connection: ${isConnected ? 'Successful' : 'Failed'}'),
             backgroundColor: isConnected ? Colors.green : Colors.red,
           ),
         );
@@ -400,28 +408,7 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
     }
   }
 
-  Future<void> _updateSettings(Map<String, dynamic> settings) async {
-    try {
-      await ref.read(llmDashboardProvider.notifier).updateConfigurationSettings(settings);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Settings updated successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update settings: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
-
   void _handleTestComplete(String prompt, String response) {
-    // Handle test completion
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Test completed successfully'), backgroundColor: Colors.green),
@@ -429,28 +416,23 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
     }
   }
 
-  Map<LLMProvider, LLMStatusResponse> _getProviderStatusMap(List<LLMStatusResponse> statuses) {
-    return {for (final status in statuses) status.provider: status};
-  }
-
   void _showAboutDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('LLM Dashboard'),
+        title: const Text('LLM Provider Dashboard'),
         content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Version: 2.0.0'),
+            Text('Version: 3.0.0 - Simplified'),
             SizedBox(height: 8),
             Text('Features:'),
-            Text('• Provider Configuration & Management'),
-            Text('• Real-time Status Monitoring'),
-            Text('• Model Selection & Testing'),
-            Text('• Connection Testing'),
-            Text('• Analytics & Statistics'),
-            Text('• Chat Interface Integration'),
+            Text('• Simple two-mode provider switching'),
+            Text('• Local and OpenRouter modes'),
+            Text('• Real-time status monitoring'),
+            Text('• Connection testing'),
+            Text('• Usage analytics'),
           ],
         ),
         actions: [

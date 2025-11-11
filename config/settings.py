@@ -52,12 +52,42 @@ class Settings(BaseSettings):
     openrouter_referer: Optional[str] = None
     openrouter_app_name: Optional[str] = "ScriptRating"
     openrouter_timeout: int = 30
+    
+    # Additional environment variables (for GUI compatibility)
+    OPENROUTER_API_KEY: Optional[str] = None
+    OPENROUTER_BASE_MODEL: Optional[str] = None
+    
     storage_root: str = "storage"
     documents_dir: str = "storage/documents"
 
     class Config:
         env_file = ".env"
         case_sensitive = False
+
+    def _get_env_var_or_setting(self, env_var: str, setting_value) -> Optional[str]:
+        """Get environment variable or use setting value."""
+        env_value = os.getenv(env_var)
+        if env_value:
+            return env_value
+        return setting_value
+
+    @property
+    def effective_openrouter_api_key(self) -> Optional[str]:
+        """Get OpenRouter API key from environment or settings."""
+        return self._get_env_var_or_setting("OPENROUTER_API_KEY", self.openrouter_api_key)
+
+    @property  
+    def effective_openrouter_base_model(self) -> Optional[str]:
+        """Get OpenRouter base model from environment or settings."""
+        return self._get_env_var_or_setting("OPENROUTER_BASE_MODEL", self.openrouter_base_model)
+
+    def get_openrouter_api_key(self) -> Optional[str]:
+        """Get OpenRouter API key from environment or settings."""
+        return self.effective_openrouter_api_key
+
+    def get_openrouter_base_model(self) -> Optional[str]:
+        """Get OpenRouter base model from environment or settings."""
+        return self.effective_openrouter_base_model
 
 
 # Create settings instance

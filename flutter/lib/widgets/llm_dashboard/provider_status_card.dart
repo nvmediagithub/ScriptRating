@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
-import '../../models/llm_models.dart';
-import '../../models/llm_provider.dart';
 
 class ProviderStatusCard extends StatefulWidget {
-  final List<LLMStatusResponse> statuses;
-  final Function(LLMProvider provider) onTestConnection;
+  final List<Map<String, dynamic>> statuses;
+  final Function(String provider) onTestConnection;
   final bool isLoading;
   final bool autoRefresh;
 
@@ -71,7 +69,7 @@ class _ProviderStatusCardState extends State<ProviderStatusCard> {
   }
 
   Widget _buildOverallHealthIndicator() {
-    final healthyProviders = widget.statuses.where((s) => s.healthy).length;
+    final healthyProviders = widget.statuses.where((s) => s['healthy'] as bool).length;
     final totalProviders = widget.statuses.length;
     final healthPercentage = totalProviders > 0 ? (healthyProviders / totalProviders) * 100 : 0;
 
@@ -148,34 +146,43 @@ class _ProviderStatusCardState extends State<ProviderStatusCard> {
     );
   }
 
-  Widget _buildProviderStatusTile(LLMStatusResponse status) {
+  Widget _buildProviderStatusTile(Map<String, dynamic> status) {
+    final provider = status['provider'] as String;
+    final available = status['available'] as bool;
+    final healthy = status['healthy'] as bool;
+    final responseTimeMs = status['response_time_ms'] as double?;
+    final errorMessage = status['error_message'] as String?;
+    final lastCheckedAt = DateTime.parse(status['last_checked_at'] as String);
+
     return Card(
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: _getStatusColor(status),
-          child: Icon(_getStatusIcon(status), color: Colors.white, size: 20),
+          backgroundColor: _getStatusColor(available, healthy),
+          child: Icon(_getStatusIcon(available, healthy), color: Colors.white, size: 20),
         ),
         title: Text(
-          status.provider.value,
+          provider,
           style: TextStyle(
-            fontWeight: _isProviderHealthy(status) ? FontWeight.normal : FontWeight.bold,
+            fontWeight: _isProviderHealthy(available, healthy)
+                ? FontWeight.normal
+                : FontWeight.bold,
           ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(_getStatusText(status)),
-            if (status.responseTimeMs != null)
-              Text('Response time: ${status.responseTimeMs!.toStringAsFixed(0)}ms'),
-            if (status.errorMessage != null)
+            Text(_getStatusText(available, healthy)),
+            if (responseTimeMs != null)
+              Text('Response time: ${responseTimeMs.toStringAsFixed(0)}ms'),
+            if (errorMessage != null)
               Text(
-                status.errorMessage!,
+                errorMessage,
                 style: const TextStyle(color: Colors.red),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             Text(
-              'Last checked: ${_formatTime(status.lastCheckedAt)}',
+              'Last checked: ${_formatTime(lastCheckedAt)}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -185,46 +192,49 @@ class _ProviderStatusCardState extends State<ProviderStatusCard> {
           children: [
             IconButton(
               icon: const Icon(Icons.refresh, size: 20),
-              onPressed: widget.isLoading ? null : () => widget.onTestConnection(status.provider),
+              onPressed: widget.isLoading ? null : () => widget.onTestConnection(provider),
               tooltip: 'Test Connection',
             ),
-            if (_isProviderHealthy(status)) Icon(Icons.check_circle, color: Colors.green, size: 16),
+            if (_isProviderHealthy(available, healthy))
+              Icon(Icons.check_circle, color: Colors.green, size: 16),
           ],
         ),
         onTap: () => _showProviderDetails(status),
-        isThreeLine: status.errorMessage != null,
+        isThreeLine: errorMessage != null,
       ),
     );
   }
 
-  Color _getStatusColor(LLMStatusResponse status) {
-    if (!status.available) return Colors.red;
-    if (!status.healthy) return Colors.orange;
+  Color _getStatusColor(bool available, bool healthy) {
+    if (!available) return Colors.red;
+    if (!healthy) return Colors.orange;
     return Colors.green;
   }
 
-  IconData _getStatusIcon(LLMStatusResponse status) {
-    if (!status.available) return Icons.error;
-    if (!status.healthy) return Icons.warning;
+  IconData _getStatusIcon(bool available, bool healthy) {
+    if (!available) return Icons.error;
+    if (!healthy) return Icons.warning;
     return Icons.check_circle;
   }
 
   IconData _getOverallStatusIcon() {
     if (widget.statuses.isEmpty) return Icons.help;
-    final healthyCount = widget.statuses.where(_isProviderHealthy).length;
+    final healthyCount = widget.statuses
+        .where((s) => _isProviderHealthy(s['available'] as bool, s['healthy'] as bool))
+        .length;
     if (healthyCount == widget.statuses.length) return Icons.check_circle;
     if (healthyCount > 0) return Icons.warning;
     return Icons.error;
   }
 
-  String _getStatusText(LLMStatusResponse status) {
-    if (!status.available) return 'Unavailable';
-    if (!status.healthy) return 'Unhealthy';
+  String _getStatusText(bool available, bool healthy) {
+    if (!available) return 'Unavailable';
+    if (!healthy) return 'Unhealthy';
     return 'Healthy';
   }
 
-  bool _isProviderHealthy(LLMStatusResponse status) {
-    return status.available && status.healthy;
+  bool _isProviderHealthy(bool available, bool healthy) {
+    return available && healthy;
   }
 
   String _formatTime(DateTime dateTime) {
@@ -240,28 +250,37 @@ class _ProviderStatusCardState extends State<ProviderStatusCard> {
   void _refreshStatuses() {
     // This would trigger a refresh of the statuses
     // The actual refresh logic would be handled by the parent component
-    widget.onTestConnection(widget.statuses.first.provider);
+    if (widget.statuses.isNotEmpty) {
+      widget.onTestConnection(widget.statuses.first['provider'] as String);
+    }
   }
 
-  void _showProviderDetails(LLMStatusResponse status) {
+  void _showProviderDetails(Map<String, dynamic> status) {
+    final provider = status['provider'] as String;
+    final available = status['available'] as bool;
+    final healthy = status['healthy'] as bool;
+    final responseTimeMs = status['response_time_ms'] as double?;
+    final errorMessage = status['error_message'] as String?;
+    final lastCheckedAt = DateTime.parse(status['last_checked_at'] as String);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${status.provider.value} Details'),
+        title: Text('$provider Details'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDetailRow('Status', _getStatusText(status)),
-            _buildDetailRow('Available', status.available ? 'Yes' : 'No'),
-            _buildDetailRow('Healthy', status.healthy ? 'Yes' : 'No'),
-            if (status.responseTimeMs != null)
-              _buildDetailRow('Response Time', '${status.responseTimeMs!.toStringAsFixed(0)}ms'),
-            _buildDetailRow('Last Checked', _formatTime(status.lastCheckedAt)),
-            if (status.errorMessage != null) ...[
+            _buildDetailRow('Status', _getStatusText(available, healthy)),
+            _buildDetailRow('Available', available ? 'Yes' : 'No'),
+            _buildDetailRow('Healthy', healthy ? 'Yes' : 'No'),
+            if (responseTimeMs != null)
+              _buildDetailRow('Response Time', '${responseTimeMs.toStringAsFixed(0)}ms'),
+            _buildDetailRow('Last Checked', _formatTime(lastCheckedAt)),
+            if (errorMessage != null) ...[
               const SizedBox(height: 8),
               const Text('Error Message:', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text(status.errorMessage!),
+              Text(errorMessage),
             ],
           ],
         ),
@@ -270,7 +289,7 @@ class _ProviderStatusCardState extends State<ProviderStatusCard> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              widget.onTestConnection(status.provider);
+              widget.onTestConnection(provider);
             },
             child: const Text('Test Connection'),
           ),
@@ -280,7 +299,9 @@ class _ProviderStatusCardState extends State<ProviderStatusCard> {
   }
 
   void _showStatusDetails() {
-    final healthyCount = widget.statuses.where(_isProviderHealthy).length;
+    final healthyCount = widget.statuses
+        .where((s) => _isProviderHealthy(s['available'] as bool, s['healthy'] as bool))
+        .length;
     final totalCount = widget.statuses.length;
     final healthPercentage = totalCount > 0 ? (healthyCount / totalCount) * 100 : 0;
 
@@ -296,18 +317,24 @@ class _ProviderStatusCardState extends State<ProviderStatusCard> {
             _buildDetailRow('Healthy Providers', '$healthyCount/$totalCount'),
             const SizedBox(height: 16),
             const Text('Provider Breakdown:', style: TextStyle(fontWeight: FontWeight.bold)),
-            ...widget.statuses.map(
-              (status) => Padding(
+            ...widget.statuses.map((status) {
+              final available = status['available'] as bool;
+              final healthy = status['healthy'] as bool;
+              return Padding(
                 padding: const EdgeInsets.only(left: 8, top: 4),
                 child: Row(
                   children: [
-                    Icon(_getStatusIcon(status), size: 16, color: _getStatusColor(status)),
+                    Icon(
+                      _getStatusIcon(available, healthy),
+                      size: 16,
+                      color: _getStatusColor(available, healthy),
+                    ),
                     const SizedBox(width: 8),
-                    Text('${status.provider.value}: ${_getStatusText(status)}'),
+                    Text('${status['provider']}: ${_getStatusText(available, healthy)}'),
                   ],
                 ),
-              ),
-            ),
+              );
+            }),
           ],
         ),
         actions: [

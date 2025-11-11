@@ -48,13 +48,13 @@ OPENROUTER_MAX_RETRIES = 3
 
 PROVIDER_SETTINGS: Dict[LLMProvider, LLMProviderSettings] = {
     LLMProvider.LOCAL: LLMProviderSettings(
-        provider="local",  # Use string value instead of enum to avoid validation issues
+        provider=LLMProvider.LOCAL,  # Use enum value for consistency
         base_url="http://localhost:11434",
         timeout=30,
         max_retries=3,
     ),
     LLMProvider.OPENROUTER: LLMProviderSettings(
-        provider="openrouter",  # Use string value instead of enum to avoid validation issues
+        provider=LLMProvider.OPENROUTER,  # Use enum value for consistency
         api_key="configured" if openrouter_client.has_api_key else None,
         base_url=openrouter_client.base_url,
         timeout=openrouter_client.timeout,
@@ -65,7 +65,7 @@ PROVIDER_SETTINGS: Dict[LLMProvider, LLMProviderSettings] = {
 MOCK_MODELS: Dict[str, LLMModelConfig] = {
     "llama2:7b": LLMModelConfig(
         model_name="llama2:7b",
-        provider="local",  # Use string value instead of enum to avoid validation issues
+        provider=LLMProvider.LOCAL,  # Use enum value for consistency
         context_window=4096,
         max_tokens=2048,
         temperature=0.7,
@@ -75,7 +75,7 @@ MOCK_MODELS: Dict[str, LLMModelConfig] = {
     ),
     "mistral:7b": LLMModelConfig(
         model_name="mistral:7b",
-        provider="local",  # Use string value instead of enum to avoid validation issues
+        provider=LLMProvider.LOCAL,  # Use enum value for consistency
         context_window=4096,
         max_tokens=2048,
         temperature=0.7,
@@ -101,7 +101,7 @@ def _update_provider_settings(settings_update: LLMProviderSettings) -> None:
         openrouter_client.timeout = settings_update.timeout
 
         sanitized = LLMProviderSettings(
-            provider="openrouter",  # Use string value instead of enum to avoid validation issues
+            provider=LLMProvider.OPENROUTER,  # Use enum value for consistency
             api_key="configured" if openrouter_client.has_api_key else None,
             base_url=openrouter_client.base_url,
             timeout=openrouter_client.timeout,
@@ -248,7 +248,7 @@ async def get_llm_config():
         for model_name in remote_models:
             dynamic_models[model_name] = LLMModelConfig(
                 model_name=model_name,
-                provider="openrouter",  # Use string value instead of enum to avoid validation issues
+                provider=LLMProvider.OPENROUTER,  # Use enum value for consistency
                 context_window=4096,
                 max_tokens=2048,
                 temperature=0.7,
@@ -260,7 +260,7 @@ async def get_llm_config():
     # Keep provider metadata in sync with actual client state (without exposing key)
     current_openrouter_settings = PROVIDER_SETTINGS[LLMProvider.OPENROUTER]
     PROVIDER_SETTINGS[LLMProvider.OPENROUTER] = LLMProviderSettings(
-        provider="openrouter",  # Use string value instead of enum to avoid validation issues
+        provider=LLMProvider.OPENROUTER,  # Use enum value for consistency
         api_key="configured" if openrouter_client.has_api_key else None,
         base_url=current_openrouter_settings.base_url,
         timeout=current_openrouter_settings.timeout,
@@ -703,26 +703,68 @@ async def switch_llm_mode(provider: LLMProvider, model_name: str):
     """
     global ACTIVE_PROVIDER, ACTIVE_MODEL
 
-    if provider not in PROVIDER_SETTINGS:
-        raise HTTPException(status_code=400, detail="Provider not configured")
+    try:
+        logger.info(f"Switching LLM mode to provider: {provider.value}, model: {model_name}")
 
-    # Validate model availability for provider
-    if provider == LLMProvider.LOCAL:
-        if model_name not in MOCK_LOCAL_MODELS:
-            raise HTTPException(status_code=400, detail="Local model not available")
-        # Ensure model is loaded
-        if not MOCK_LOCAL_MODELS[model_name].loaded:
-            raise HTTPException(status_code=400, detail="Local model not loaded")
-    else:  # OpenRouter
-        if not await _model_available(model_name, LLMProvider.OPENROUTER):
+        if provider not in PROVIDER_SETTINGS:
+            logger.error(f"Provider {provider.value} not configured in PROVIDER_SETTINGS")
+            available_providers = [p.value for p in PROVIDER_SETTINGS.keys()]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Provider '{provider.value}' not available. Available providers: {available_providers}"
+            )
+
+        # Validate model availability for provider
+        if provider == LLMProvider.LOCAL:
+            if model_name not in MOCK_LOCAL_MODELS:
+                logger.error(f"Local model '{model_name}' not found in MOCK_LOCAL_MODELS")
+                available_models = list(MOCK_LOCAL_MODELS.keys())
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Local model '{model_name}' not available. Available models: {available_models}"
+                )
+            # Ensure model is loaded
+            if not MOCK_LOCAL_MODELS[model_name].loaded:
+                logger.error(f"Local model '{model_name}' is not loaded")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Local model '{model_name}' is not loaded. Please load the model first."
+                )
+        else:  # OpenRouter
             if not openrouter_client.has_api_key:
-                raise HTTPException(status_code=400, detail="OpenRouter API key is not configured")
-            raise HTTPException(status_code=400, detail="OpenRouter model not available")
+                logger.error("OpenRouter API key is not configured")
+                raise HTTPException(
+                    status_code=400,
+                    detail="OpenRouter API key is not configured. Please configure it in settings."
+                )
+            
+            if not await _model_available(model_name, LLMProvider.OPENROUTER):
+                logger.error(f"OpenRouter model '{model_name}' not available")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Model '{model_name}' not available on OpenRouter. Please select a different model."
+                )
 
-    ACTIVE_PROVIDER = provider
-    ACTIVE_MODEL = model_name
+        # Store previous state for potential rollback
+        previous_provider = ACTIVE_PROVIDER
+        previous_model = ACTIVE_MODEL
+        
+        # Switch to new configuration
+        ACTIVE_PROVIDER = provider
+        ACTIVE_MODEL = model_name
 
-    return await get_llm_config()
+        logger.info(f"Successfully switched from {previous_provider.value}/{previous_model} to {provider.value}/{model_name}")
+
+        return await get_llm_config()
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in switch_llm_mode: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to switch provider mode: {str(e)}"
+        )
 
 
 @router.get("/config/health")

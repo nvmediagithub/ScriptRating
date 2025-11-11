@@ -15,77 +15,65 @@ class LlmService {
     _dio.options.headers['Content-Type'] ??= 'application/json';
   }
 
-  // Configuration Management
-  Future<LLMConfigResponse> getConfig() async {
+  // Simplified Configuration Management
+  Future<Map<String, dynamic>> getConfig() async {
     final response = await _dio.get('/llm/config');
-    return LLMConfigResponse.fromJson(Map<String, dynamic>.from(response.data as Map));
+    return response.data as Map<String, dynamic>;
   }
 
   /// Alias for getConfig() to maintain compatibility with existing code
-  Future<LLMConfigResponse> getLLMConfig() async {
+  Future<Map<String, dynamic>> getLLMConfig() async {
     return getConfig();
   }
 
-  Future<LLMConfigResponse> updateConfig({
-    LLMProvider? provider,
-    String? modelName,
-    LLMProviderSettings? settings,
-    LLMModelConfig? modelConfig,
-  }) async {
+  Future<Map<String, dynamic>> updateConfig({String? provider, String? modelName}) async {
     final requestData = <String, dynamic>{};
 
     if (provider != null) {
-      requestData['provider'] = provider.name;
+      requestData['provider'] = provider;
     }
 
     if (modelName != null) {
       requestData['model_name'] = modelName;
     }
 
-    if (settings != null) {
-      requestData['settings'] = settings.toJson();
-    }
-
-    if (modelConfig != null) {
-      requestData['llm_model_config'] = modelConfig.toJson();
-    }
-
     final response = await _dio.put('/llm/config', data: requestData);
-    return LLMConfigResponse.fromJson(Map<String, dynamic>.from(response.data as Map));
+    return response.data as Map<String, dynamic>;
   }
 
-  // Provider Management
-  Future<Map<LLMProvider, LLMProviderSettings>> getLLMProviders() async {
+  // Simplified Provider Management
+  Future<Map<String, dynamic>> getLLMProviders() async {
     try {
       final config = await getConfig();
-      return config.providers;
+      return config['providers'] as Map<String, dynamic>;
     } catch (e) {
       throw Exception('Failed to get LLM providers: $e');
     }
   }
 
-  Future<LLMProvider> getActiveProvider() async {
+  Future<String> getActiveProvider() async {
     try {
       final config = await getConfig();
-      return config.activeProvider;
+      return config['active_provider'] as String;
     } catch (e) {
       throw Exception('Failed to get active provider: $e');
     }
   }
 
-  Future<void> setActiveProvider(LLMProvider provider) async {
+  Future<void> setActiveProvider(String provider) async {
     try {
-      await updateConfig(provider: provider);
+      // Simple provider switch - will use default model for the provider
+      await switchMode(provider);
     } catch (e) {
       throw Exception('Failed to set active provider: $e');
     }
   }
 
-  // Model Management
-  Future<Map<String, LLMModelConfig>> getLLMModels() async {
+  // Simplified Model Management
+  Future<Map<String, dynamic>> getLLMModels() async {
     try {
       final config = await getConfig();
-      return config.models;
+      return config['models'] as Map<String, dynamic>;
     } catch (e) {
       throw Exception('Failed to get LLM models: $e');
     }
@@ -94,13 +82,13 @@ class LlmService {
   Future<String> getActiveModel() async {
     try {
       final config = await getConfig();
-      return config.activeModel;
+      return config['active_model'] as String;
     } catch (e) {
       throw Exception('Failed to get active model: $e');
     }
   }
 
-  Future<void> setActiveModel(String modelName, {LLMProvider? provider}) async {
+  Future<void> setActiveModel(String modelName, {String? provider}) async {
     try {
       await updateConfig(modelName: modelName, provider: provider);
     } catch (e) {
@@ -108,126 +96,100 @@ class LlmService {
     }
   }
 
-  List<String> getModelsByProvider(LLMProvider provider, Map<String, LLMModelConfig> models) {
-    return models.entries
-        .where((entry) => entry.value.provider == provider)
-        .map((entry) => entry.key)
-        .toList();
-  }
-
-  // Status Monitoring
-  Future<LLMStatusResponse> getProviderStatus(LLMProvider provider) async {
+  // Simplified Status Monitoring
+  Future<Map<String, dynamic>> getProviderStatus(String provider) async {
     try {
-      final response = await _dio.get('/llm/status/${provider.name}');
-      return LLMStatusResponse.fromJson(Map<String, dynamic>.from(response.data as Map));
+      final response = await _dio.get('/llm/status/$provider');
+      return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      throw Exception('Failed to get provider status for ${provider.name}: $e');
+      throw Exception('Failed to get provider status for $provider: $e');
     }
   }
 
-  Future<List<LLMStatusResponse>> getStatuses() async {
+  Future<List<Map<String, dynamic>>> getStatuses() async {
     try {
       final response = await _dio.get('/llm/status');
       final list = response.data as List<dynamic>;
-      return list
-          .map((item) => LLMStatusResponse.fromJson(Map<String, dynamic>.from(item as Map)))
-          .toList();
+      return list.map((item) => item as Map<String, dynamic>).toList();
     } on DioException catch (e) {
       throw Exception('Failed to get all providers status: $e');
     }
   }
 
-  Future<List<LLMStatusResponse>> getAllProvidersStatus() async {
+  Future<List<Map<String, dynamic>>> getAllProvidersStatus() async {
     return getStatuses();
   }
 
-  Future<Map<LLMProvider, bool>> checkProvidersHealth() async {
+  Future<Map<String, bool>> checkProvidersHealth() async {
     try {
       final statuses = await getAllProvidersStatus();
-      return {for (final status in statuses) status.provider: status.healthy};
+      return {
+        for (final status in statuses) status['provider'] as String: status['healthy'] as bool,
+      };
     } catch (e) {
       throw Exception('Failed to check providers health: $e');
     }
   }
 
-  // Local Models Management
-  Future<LocalModelsListResponse> getLocalModels() async {
+  // Simplified Local Models Management
+  Future<Map<String, dynamic>> getLocalModels() async {
     final response = await _dio.get('/llm/local/models');
-    return LocalModelsListResponse.fromJson(Map<String, dynamic>.from(response.data as Map));
+    return response.data as Map<String, dynamic>;
   }
 
-  Future<LocalModelInfo> loadLocalModel(String modelName) async {
+  Future<Map<String, dynamic>> loadLocalModel(String modelName) async {
     final response = await _dio.post('/llm/local/models/load', data: {'model_name': modelName});
-    return LocalModelInfo.fromJson(Map<String, dynamic>.from(response.data as Map));
+    return response.data as Map<String, dynamic>;
   }
 
-  Future<LocalModelInfo> unloadLocalModel(String modelName) async {
+  Future<Map<String, dynamic>> unloadLocalModel(String modelName) async {
     final response = await _dio.post('/llm/local/models/unload', data: {'model_name': modelName});
-    return LocalModelInfo.fromJson(Map<String, dynamic>.from(response.data as Map));
+    return response.data as Map<String, dynamic>;
   }
 
-  // OpenRouter Specific Operations
-  Future<OpenRouterStatusResponse> getOpenRouterStatus() async {
+  // Simplified OpenRouter Operations
+  Future<Map<String, dynamic>> getOpenRouterStatus() async {
     final response = await _dio.get('/llm/openrouter/status');
-    return OpenRouterStatusResponse.fromJson(Map<String, dynamic>.from(response.data as Map));
+    return response.data as Map<String, dynamic>;
   }
 
-  // Updated to use the available /llm/models endpoint instead of the non-existent /llm/openrouter/models
-  Future<OpenRouterModelsListResponse> getOpenRouterModels() async {
+  Future<Map<String, dynamic>> getOpenRouterModels() async {
     try {
-      // Use the main models endpoint and filter for OpenRouter models
+      // Get models and filter for OpenRouter
       final allModels = await getLLMModels();
-      final openRouterModels = allModels.entries
-          .where((entry) => entry.value.provider == 'openrouter')
-          .map((entry) => entry.key)
-          .toList();
+      final openRouterModels = <String>[];
 
-      return OpenRouterModelsListResponse(models: openRouterModels, total: openRouterModels.length);
+      for (final entry in allModels.entries) {
+        final model = entry.value as Map<String, dynamic>;
+        if (model['provider'] == 'openrouter') {
+          openRouterModels.add(entry.key);
+        }
+      }
+
+      return {'models': openRouterModels, 'total': openRouterModels.length};
     } catch (e) {
       // Fallback to empty response if models endpoint fails
-      return OpenRouterModelsListResponse(models: [], total: 0);
+      return {'models': <String>[], 'total': 0};
     }
   }
 
-  Future<LLMConfigResponse> switchMode(LLMProvider provider, String modelName) async {
-    final response = await _dio.put(
-      '/llm/config/mode',
-      queryParameters: {'provider': provider.name, 'model_name': modelName},
-    );
-    return LLMConfigResponse.fromJson(Map<String, dynamic>.from(response.data as Map));
+  Future<Map<String, dynamic>> switchMode(String provider, [String? modelName]) async {
+    debugPrint('Switching LLM mode to provider: $provider, model: $modelName');
+    final queryParameters = <String, String>{'provider': provider};
+    if (modelName != null) {
+      queryParameters['model_name'] = modelName;
+    }
+
+    final response = await _dio.put('/llm/config/mode', queryParameters: queryParameters);
+    debugPrint('Switch response: ${response.data}');
+    return response.data as Map<String, dynamic>;
   }
 
-  // Health and Performance
-  Future<LLMHealthSummary> getHealthSummary() async {
+  // Simplified Health and Performance
+  Future<Map<String, dynamic>> getHealthSummary() async {
     final response = await _dio.get('/llm/config/health');
-    return LLMHealthSummary.fromJson(Map<String, dynamic>.from(response.data as Map));
+    return response.data as Map<String, dynamic>;
   }
-
-  // Future<List<PerformanceReportResponse>> getPerformanceReports() async {
-  //   final response = await _dio.get('/llm/performance');
-  //   final list = response.data as List<dynamic>;
-  //   return list
-  //       .map((item) => PerformanceReportResponse.fromJson(Map<String, dynamic>.from(item as Map)))
-  //       .toList();
-  // }
-
-  // Future<Map<String, dynamic>> getProviderMetrics(LLMProvider provider) async {
-  //   try {
-  //     final response = await _dio.get('/llm/performance/${provider.name}');
-  //     return response.data as Map<String, dynamic>;
-  //   } on DioException catch (e) {
-  //     throw Exception('Failed to get provider metrics for ${provider.name}: $e');
-  //   }
-  // }
-
-  // Future<Map<String, dynamic>> getAllProvidersMetrics() async {
-  //   try {
-  //     final response = await _dio.get('/llm/performance');
-  //     return response.data as Map<String, dynamic>;
-  //   } on DioException catch (e) {
-  //     throw Exception('Failed to get all providers metrics: $e');
-  //   }
-  // }
 
   Future<Map<String, dynamic>> getSystemHealth() async {
     try {
@@ -238,53 +200,31 @@ class LlmService {
     }
   }
 
-  // Testing and Validation (keeping original functionality)
-  Future<LLMTestResponse> testLLM(String prompt, {String? modelName}) async {
+  // Simplified Testing
+  Future<Map<String, dynamic>> testLLM(String prompt, {String? modelName}) async {
     try {
       final requestData = {'prompt': prompt, if (modelName != null) 'model_name': modelName};
 
       final response = await _dio.post('/llm/test', data: requestData);
-      return LLMTestResponse.fromJson(response.data);
+      return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       throw Exception('Failed to test LLM: $e');
     }
   }
 
-  // Provider Settings Management (keeping original functionality)
-  Future<void> updateProviderSettings(LLMProviderSettings settings) async {
-    try {
-      await updateConfig(settings: settings);
-    } catch (e) {
-      throw Exception('Failed to update provider settings: $e');
-    }
+  // Simplified OpenRouter Configuration (no longer needed - reads from .env)
+  bool get isOpenRouterConfigured => true; // Always true, backend checks .env
+
+  Future<void> configureOpenRouter() async {
+    // No longer needed - OpenRouter reads from .env automatically
+    return;
   }
 
-  Future<void> configureOpenRouter({
-    String? apiKey,
-    String? baseUrl,
-    int? timeout,
-    int? maxRetries,
-  }) async {
-    try {
-      final settings = LLMProviderSettings(
-        provider: LLMProvider.openrouter,
-        apiKey: apiKey,
-        baseUrl: baseUrl,
-        timeout: timeout ?? 30,
-        maxRetries: maxRetries ?? 3,
-      );
-
-      await updateProviderSettings(settings);
-    } catch (e) {
-      throw Exception('Failed to configure OpenRouter: $e');
-    }
-  }
-
-  // Connection Testing (keeping original functionality)
-  Future<bool> testConnection(LLMProvider provider) async {
+  // Simplified Connection Testing
+  Future<bool> testConnection(String provider) async {
     try {
       final status = await getProviderStatus(provider);
-      return status.healthy;
+      return status['healthy'] as bool;
     } catch (e) {
       return false;
     }
@@ -293,13 +233,13 @@ class LlmService {
   Future<bool> testOpenRouterConnection() async {
     try {
       final status = await getOpenRouterStatus();
-      return status.connected;
+      return status['connected'] as bool;
     } catch (e) {
       return false;
     }
   }
 
-  // Initialize and Cleanup (keeping original functionality)
+  // Initialize and Cleanup
   Future<void> initialize() async {
     // Initialize the LLM service
     // This could include loading saved settings, checking connectivity, etc.
@@ -309,8 +249,8 @@ class LlmService {
     // Cleanup resources if needed
   }
 
-  // Provider connectivity and testing methods
-  Future<bool> testProviderConnectivity(LLMProvider provider, {String? modelName}) async {
+  // Simplified Provider connectivity and testing methods
+  Future<bool> testProviderConnectivity(String provider, {String? modelName}) async {
     try {
       await testLLM('Test connectivity', modelName: modelName);
       return true;
@@ -319,21 +259,15 @@ class LlmService {
     }
   }
 
-  Future<Map<String, dynamic>> getProviderConnectionDetails(LLMProvider provider) async {
-    try {
-      final response = await _dio.get('/llm/providers/${provider.name}/connection');
-      return response.data as Map<String, dynamic>;
-    } on DioException catch (e) {
-      throw Exception('Failed to get connection details for ${provider.name}: $e');
-    }
-  }
-
-  // Real-time status monitoring
-  Stream<Map<LLMProvider, LLMStatusResponse>> monitorProvidersStatus() async* {
+  // Real-time status monitoring (simplified)
+  Stream<Map<String, Map<String, dynamic>>> monitorProvidersStatus() async* {
     while (true) {
       try {
         final statuses = await getAllProvidersStatus();
-        final statusMap = {for (final status in statuses) status.provider: status};
+        final statusMap = <String, Map<String, dynamic>>{};
+        for (final status in statuses) {
+          statusMap[status['provider'] as String] = status;
+        }
         yield statusMap;
       } catch (e) {
         // Continue monitoring even if there's an error
@@ -343,10 +277,10 @@ class LlmService {
     }
   }
 
-  // Chat-specific methods (real backend calls)
+  // Chat-specific methods (simplified)
   Future<ChatSession> createChatSession({
     required String title,
-    required LLMProvider provider,
+    required String provider,
     required String model,
     Map<String, dynamic>? settings,
   }) async {
@@ -355,7 +289,7 @@ class LlmService {
         '/chats',
         data: {
           'title': title,
-          'llm_provider': provider.name,
+          'llm_provider': provider,
           'llm_model': model,
           if (settings != null) 'settings': settings,
         },
@@ -449,7 +383,7 @@ class LlmService {
         title: 'OpenRouter Chat',
         userId: 'user-1',
         llmProvider: LLMProvider.openrouter,
-        llmModel: 'gpt-3.5-turbo',
+        llmModel: 'minimax/minimax-m2:free',
         createdAt: DateTime.now().subtract(const Duration(days: 1)),
         updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
         messageCount: 5,
@@ -487,45 +421,7 @@ class LlmService {
     ];
   }
 
-  // Configuration and settings management
-  Future<Map<String, dynamic>> getConfigurationSettings() async {
-    try {
-      final response = await _dio.get('/llm/config/settings');
-      return response.data as Map<String, dynamic>;
-    } on DioException catch (e) {
-      throw Exception('Failed to get configuration settings: $e');
-    }
-  }
-
-  Future<void> updateConfigurationSettings(Map<String, dynamic> settings) async {
-    try {
-      await _dio.put('/llm/config/settings', data: settings);
-    } on DioException catch (e) {
-      throw Exception('Failed to update configuration settings: $e');
-    }
-  }
-
-  // Performance and usage statistics
-  Future<Map<String, dynamic>> getProviderUsageStats(
-    LLMProvider provider, {
-    String? timeRange,
-  }) async {
-    try {
-      final queryParams = <String, String>{};
-      if (timeRange != null) {
-        queryParams['time_range'] = timeRange;
-      }
-
-      final response = await _dio.get(
-        '/llm/providers/${provider.name}/usage',
-        queryParameters: queryParams,
-      );
-      return response.data as Map<String, dynamic>;
-    } on DioException catch (e) {
-      throw Exception('Failed to get usage stats for ${provider.name}: $e');
-    }
-  }
-
+  // Simplified Usage statistics
   Future<Map<String, dynamic>> getSystemUsageStats({String? timeRange}) async {
     try {
       final queryParams = <String, String>{};

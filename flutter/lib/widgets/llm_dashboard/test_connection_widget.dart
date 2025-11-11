@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../models/llm_models.dart';
-import '../../models/llm_provider.dart';
 
 class TestConnectionWidget extends StatefulWidget {
-  final LLMProvider provider;
+  final String provider;
   final String? modelName;
   final Function(String prompt, String response) onTestComplete;
-  final Function(LLMProvider provider) onTestConnection;
+  final Function(String provider) onTestConnection;
   final bool isLoading;
 
   const TestConnectionWidget({
@@ -79,10 +77,10 @@ class _TestConnectionWidgetState extends State<TestConnectionWidget> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Provider: ${widget.provider.value}',
+                          'Provider: ${widget.provider}',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        if (widget.modelName != null) Text('Model: $widget.modelName'),
+                        if (widget.modelName != null) Text('Model: ${widget.modelName}'),
                       ],
                     ),
                   ),
@@ -225,21 +223,25 @@ class _TestConnectionWidgetState extends State<TestConnectionWidget> {
     );
   }
 
-  IconData _getProviderIcon(LLMProvider provider) {
-    switch (provider) {
-      case LLMProvider.local:
+  IconData _getProviderIcon(String provider) {
+    switch (provider.toLowerCase()) {
+      case 'local':
         return Icons.computer;
-      case LLMProvider.openrouter:
+      case 'openrouter':
         return Icons.cloud;
+      default:
+        return Icons.settings;
     }
   }
 
-  Color _getProviderColor(LLMProvider provider) {
-    switch (provider) {
-      case LLMProvider.local:
+  Color _getProviderColor(String provider) {
+    switch (provider.toLowerCase()) {
+      case 'local':
         return Colors.blue;
-      case LLMProvider.openrouter:
+      case 'openrouter':
         return Colors.orange;
+      default:
+        return Colors.grey;
     }
   }
 

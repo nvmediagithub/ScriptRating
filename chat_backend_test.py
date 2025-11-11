@@ -572,7 +572,7 @@ class ChatAPITester:
                     model_name = "llama2:7b"
                 else:  # OpenRouter
                     mock_response = "Thank you for your question. Based on my analysis, I can provide insights about this topic."
-                    model_name = "gpt-3.5-turbo"
+                    model_name = "minimax/minimax-m2:free"
                 
                 # Simulate LLM processing
                 request = MockLLMRequest(

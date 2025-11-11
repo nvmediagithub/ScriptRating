@@ -75,7 +75,7 @@ class _ProviderConfigCardState extends State<ProviderConfigCard> {
                 'Active',
                 style: TextStyle(color: Colors.green, fontWeight: FontWeight.w500),
               ),
-            if (provider == LLMProvider.openrouter && !isConfigured)
+            if (provider == LLMProvider.openrouter && !isConfigured && !widget.isLoading)
               const Text(
                 'Click to configure OpenRouter API key',
                 style: TextStyle(fontSize: 12, color: Colors.grey),
@@ -84,6 +84,18 @@ class _ProviderConfigCardState extends State<ProviderConfigCard> {
         ),
         trailing: isActive
             ? const Icon(Icons.check_circle, color: Colors.green)
+            : widget.isLoading
+            ? const SizedBox(
+                width: 80,
+                height: 32,
+                child: Center(
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
             : isConfigured
             ? _buildSwitchButton(provider)
             : _buildConfigButton(provider),
@@ -116,9 +128,10 @@ class _ProviderConfigCardState extends State<ProviderConfigCard> {
       case LLMProvider.local:
         return true; // Local provider is always considered configured
       case LLMProvider.openrouter:
+        // Check for configured status - the backend returns "configured" as the api_key value when it's set
         return settings.apiKey != null &&
-            settings.apiKey!.isNotEmpty &&
-            settings.apiKey!.startsWith('sk-or-');
+            (settings.apiKey == "configured" ||
+                (settings.apiKey!.isNotEmpty && settings.apiKey!.startsWith('sk-or-')));
     }
   }
 

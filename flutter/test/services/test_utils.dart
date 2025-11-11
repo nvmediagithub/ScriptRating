@@ -11,7 +11,7 @@ import 'package:script_rating_app/models/llm_models.dart';
 // Mock Dio instance
 class MockDio extends Mock implements Dio {
   final BaseOptions _options = BaseOptions();
-  
+
   @override
   BaseOptions get options => _options;
 }
@@ -83,10 +83,7 @@ class TestDataGenerator {
         'final_rating': '12+',
         'confidence_score': 0.85,
         'problem_scenes_count': 3,
-        'categories_summary': {
-          'violence': 'mild',
-          'language': 'moderate',
-        },
+        'categories_summary': {'violence': 'mild', 'language': 'moderate'},
       },
       'scene_assessments': [
         {
@@ -115,7 +112,6 @@ class TestDataGenerator {
       'recommendations': ['Test recommendation'],
     };
   }
-
 
   // Analysis Status test data
   static Map<String, dynamic> createValidAnalysisStatusJson({
@@ -152,12 +148,14 @@ class TestDataGenerator {
       },
     ];
 
-    final normalizedRating = ratingResult ?? {
-      'final_rating': '12+',
-      'confidence_score': 0.9,
-      'problem_scenes_count': 1,
-      'categories_summary': {'language': 'moderate'},
-    };
+    final normalizedRating =
+        ratingResult ??
+        {
+          'final_rating': '12+',
+          'confidence_score': 0.9,
+          'problem_scenes_count': 1,
+          'categories_summary': {'language': 'moderate'},
+        };
 
     return {
       'analysis_id': analysisId,
@@ -170,7 +168,6 @@ class TestDataGenerator {
     };
   }
 
-
   // LLM Config test data
   static Map<String, dynamic> createValidLLMConfigJson({
     String activeProvider = 'local',
@@ -181,22 +178,22 @@ class TestDataGenerator {
     return {
       'active_provider': activeProvider,
       'active_model': activeModel,
-      'providers': providers ?? {
-        'local': {
-          'provider': 'local',
-          'timeout': 30,
-          'max_retries': 3,
-        },
-      },
-      'models': models ?? {
-        'test-model': {
-          'model_name': 'test-model',
-          'provider': 'local',
-          'context_window': 4096,
-          'max_tokens': 2048,
-          'temperature': 0.7,
-        },
-      },
+      'providers':
+          providers ??
+          {
+            'local': {'provider': 'local', 'timeout': 30, 'max_retries': 3},
+          },
+      'models':
+          models ??
+          {
+            'test-model': {
+              'model_name': 'test-model',
+              'provider': 'local',
+              'context_window': 4096,
+              'max_tokens': 2048,
+              'temperature': 0.7,
+            },
+          },
     };
   }
 
@@ -224,15 +221,17 @@ class TestDataGenerator {
     List<String>? loadedModels,
   }) {
     return {
-      'models': models ?? [
-        {
-          'model_name': 'test-model',
-          'size_gb': 2.5,
-          'loaded': false,
-          'context_window': 4096,
-          'max_tokens': 2048,
-        },
-      ],
+      'models':
+          models ??
+          [
+            {
+              'model_name': 'test-model',
+              'size_gb': 2.5,
+              'loaded': false,
+              'context_window': 4096,
+              'max_tokens': 2048,
+            },
+          ],
       'loaded_models': loadedModels ?? [],
     };
   }
@@ -243,7 +242,7 @@ class TestDataGenerator {
     int total = 100,
   }) {
     return {
-      'models': models ?? ['gpt-3.5-turbo', 'gpt-4', 'claude-3'],
+      'models': models ?? ['minimax/minimax-m2:free'],
       'total': total,
     };
   }
@@ -274,14 +273,16 @@ class TestDataGenerator {
     bool systemHealthy = true,
   }) {
     return {
-      'providers_status': providersStatus ?? [
-        {
-          'provider': 'local',
-          'available': true,
-          'healthy': true,
-          'lastCheckedAt': DateTime.now().toIso8601String(),
-        },
-      ],
+      'providers_status':
+          providersStatus ??
+          [
+            {
+              'provider': 'local',
+              'available': true,
+              'healthy': true,
+              'lastCheckedAt': DateTime.now().toIso8601String(),
+            },
+          ],
       'local_models_loaded': localModelsLoaded,
       'local_models_available': localModelsAvailable,
       'openrouter_connected': openRouterConnected,
@@ -300,15 +301,17 @@ class TestDataGenerator {
   }) {
     return {
       'provider': provider,
-      'metrics': metrics ?? {
-        'total_requests': 100,
-        'successful_requests': 95,
-        'failed_requests': 5,
-        'average_response_time_ms': 150.0,
-        'total_tokens_used': 5000,
-        'error_rate': 0.05,
-        'uptime_percentage': 99.5,
-      },
+      'metrics':
+          metrics ??
+          {
+            'total_requests': 100,
+            'successful_requests': 95,
+            'failed_requests': 5,
+            'average_response_time_ms': 150.0,
+            'total_tokens_used': 5000,
+            'error_rate': 0.05,
+            'uptime_percentage': 99.5,
+          },
       'time_range': timeRange,
       'generated_at': generatedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
     };
@@ -360,37 +363,27 @@ class MockResponseFactory {
 // Test matchers
 class CustomMatchers {
   static Matcher throwsApiException() {
-    return predicate<Exception>((e) => 
-      e is Exception && e.toString().contains('Failed to'),
-    );
+    return predicate<Exception>((e) => e is Exception && e.toString().contains('Failed to'));
   }
 
   static Matcher throwsApiExceptionWithMessage(String message) {
-    return predicate<Exception>((e) => 
-      e is Exception && e.toString().contains(message),
-    );
+    return predicate<Exception>((e) => e is Exception && e.toString().contains(message));
   }
 
   static Matcher isValidDioError() {
-    return predicate<DioException>((error) => 
-      error is DioException && error.response != null,
-    );
+    return predicate<DioException>((error) => error is DioException && error.response != null);
   }
 }
 
 // Error scenarios
 class ErrorScenarios {
-  static DioException createDioException({
-    int statusCode = 500,
-    String? message,
-    dynamic data,
-  }) {
+  static DioException createDioException({int statusCode = 500, String? message, dynamic data}) {
     final response = MockResponseFactory.createErrorResponse(
       statusCode: statusCode,
       statusMessage: message ?? 'Request failed',
       data: data,
     );
-    
+
     return DioException(
       requestOptions: RequestOptions(path: '/test'),
       response: response,
@@ -403,4 +396,3 @@ class ErrorScenarios {
     return Exception(message);
   }
 }
-

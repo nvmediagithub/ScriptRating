@@ -1,22 +1,64 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/locator.dart';
-import '../models/llm_dashboard_state.dart';
-import '../models/llm_models.dart';
-import '../models/llm_provider.dart';
 import '../services/llm_service.dart';
 
 final llmServiceProvider = Provider<LlmService>((ref) {
   return locator<LlmService>();
 });
 
+// Simplified state using Map instead of complex models
+class SimplifiedDashboardState {
+  final Map<String, dynamic> config;
+  final List<Map<String, dynamic>> statuses;
+  final Map<String, dynamic> localModels;
+  final Map<String, dynamic> openRouterStatus;
+  final Map<String, dynamic> openRouterModels;
+  final Map<String, dynamic> healthSummary;
+  final Map<String, dynamic> configurationSettings;
+  final bool isRefreshing;
+
+  const SimplifiedDashboardState({
+    required this.config,
+    required this.statuses,
+    required this.localModels,
+    required this.openRouterStatus,
+    required this.openRouterModels,
+    required this.healthSummary,
+    required this.configurationSettings,
+    this.isRefreshing = false,
+  });
+
+  SimplifiedDashboardState copyWith({
+    Map<String, dynamic>? config,
+    List<Map<String, dynamic>>? statuses,
+    Map<String, dynamic>? localModels,
+    Map<String, dynamic>? openRouterStatus,
+    Map<String, dynamic>? openRouterModels,
+    Map<String, dynamic>? healthSummary,
+    Map<String, dynamic>? configurationSettings,
+    bool? isRefreshing,
+  }) {
+    return SimplifiedDashboardState(
+      config: config ?? this.config,
+      statuses: statuses ?? this.statuses,
+      localModels: localModels ?? this.localModels,
+      openRouterStatus: openRouterStatus ?? this.openRouterStatus,
+      openRouterModels: openRouterModels ?? this.openRouterModels,
+      healthSummary: healthSummary ?? this.healthSummary,
+      configurationSettings: configurationSettings ?? this.configurationSettings,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
+    );
+  }
+}
+
 final llmDashboardProvider =
-    StateNotifierProvider<LlmDashboardNotifier, AsyncValue<LlmDashboardState>>((ref) {
+    StateNotifierProvider<LlmDashboardNotifier, AsyncValue<SimplifiedDashboardState>>((ref) {
       final service = ref.watch(llmServiceProvider);
       return LlmDashboardNotifier(service);
     });
 
-class LlmDashboardNotifier extends StateNotifier<AsyncValue<LlmDashboardState>> {
+class LlmDashboardNotifier extends StateNotifier<AsyncValue<SimplifiedDashboardState>> {
   final LlmService _service;
 
   LlmDashboardNotifier(this._service) : super(const AsyncValue.loading()) {
@@ -44,14 +86,63 @@ class LlmDashboardNotifier extends StateNotifier<AsyncValue<LlmDashboardState>> 
     }
   }
 
-  Future<void> switchActiveModelToProvider(LLMProvider provider, String modelName) async {
+  Future<SimplifiedDashboardState> _fetchState() async {
+    final config = await _service.getConfig();
+    final statuses = await _service.getStatuses();
+    final localModels = await _service.getLocalModels();
+    final openRouterStatus = await _service.getOpenRouterStatus();
+    final openRouterModels = await _service.getOpenRouterModels();
+    final healthSummary = await _service.getHealthSummary();
+    final configurationSettings = _getDefaultConfigurationSettings();
+
+    return SimplifiedDashboardState(
+      config: config,
+      statuses: statuses,
+      localModels: localModels,
+      openRouterStatus: openRouterStatus,
+      openRouterModels: openRouterModels,
+      healthSummary: healthSummary,
+      configurationSettings: configurationSettings,
+      isRefreshing: false,
+    );
+  }
+
+  // Simplified provider management for just two modes
+  Future<void> switchActiveProvider(String provider) async {
     final previous = state.valueOrNull;
     if (previous != null) {
       state = AsyncValue.data(previous.copyWith(isRefreshing: true));
     }
 
     try {
-      await _service.switchMode(provider, modelName);
+      await _service.setActiveProvider(provider);
+
+      // Verify the switch was successful
+      final newConfig = await _service.getConfig();
+      if (newConfig['active_provider'] != provider) {
+        throw Exception('Provider switch failed');
+      }
+
+      final data = await _fetchState();
+      state = AsyncValue.data(data);
+    } catch (error, stackTrace) {
+      if (previous != null) {
+        state = AsyncValue.data(previous.copyWith(isRefreshing: false));
+      } else {
+        state = AsyncValue.error(error, stackTrace);
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> switchActiveModel(String modelName) async {
+    final previous = state.valueOrNull;
+    if (previous != null) {
+      state = AsyncValue.data(previous.copyWith(isRefreshing: true));
+    }
+
+    try {
+      await _service.setActiveModel(modelName);
       final data = await _fetchState();
       state = AsyncValue.data(data);
     } catch (error, stackTrace) {
@@ -104,120 +195,11 @@ class LlmDashboardNotifier extends StateNotifier<AsyncValue<LlmDashboardState>> 
     }
   }
 
-  Future<LlmDashboardState> _fetchState() async {
-    final config = await _service.getConfig();
-    final statuses = await _service.getStatuses();
-    final localModels = await _service.getLocalModels();
-    final openRouterStatus = await _service.getOpenRouterStatus();
-    final openRouterModels = await _service.getOpenRouterModels();
-    final healthSummary = await _service.getHealthSummary();
-    // final performanceReports = await _service.getPerformanceReports();
-    final configurationSettings = await _service.getConfigurationSettings().catchError((e) {
-      // Fallback to default settings if API not available
-      return _getDefaultConfigurationSettings();
-    });
-
-    return LlmDashboardState(
-      config: config,
-      statuses: statuses,
-      localModels: localModels,
-      openRouterStatus: openRouterStatus,
-      openRouterModels: openRouterModels,
-      healthSummary: healthSummary,
-      // performanceReports: performanceReports,
-      configurationSettings: configurationSettings,
-      isRefreshing: false,
-    );
-  }
-
-  // New methods for enhanced functionality
-  Future<void> switchActiveProvider(LLMProvider provider) async {
-    final previous = state.valueOrNull;
-    if (previous != null) {
-      state = AsyncValue.data(previous.copyWith(isRefreshing: true));
-    }
-
+  Future<bool> testProviderConnection(String provider) async {
     try {
-      await _service.setActiveProvider(provider);
-      final data = await _fetchState();
-      state = AsyncValue.data(data);
-    } catch (error, stackTrace) {
-      if (previous != null) {
-        state = AsyncValue.data(previous.copyWith(isRefreshing: false));
-      } else {
-        state = AsyncValue.error(error, stackTrace);
-      }
-      rethrow;
-    }
-  }
-
-  Future<void> switchActiveModel(String modelName) async {
-    final previous = state.valueOrNull;
-    if (previous != null) {
-      state = AsyncValue.data(previous.copyWith(isRefreshing: true));
-    }
-
-    try {
-      await _service.setActiveModel(modelName);
-      final data = await _fetchState();
-      state = AsyncValue.data(data);
-    } catch (error, stackTrace) {
-      if (previous != null) {
-        state = AsyncValue.data(previous.copyWith(isRefreshing: false));
-      } else {
-        state = AsyncValue.error(error, stackTrace);
-      }
-      rethrow;
-    }
-  }
-
-  Future<void> configureProvider(LLMProvider provider, String apiKey, String baseUrl) async {
-    final previous = state.valueOrNull;
-    if (previous != null) {
-      state = AsyncValue.data(previous.copyWith(isRefreshing: true));
-    }
-
-    try {
-      if (provider == LLMProvider.openrouter) {
-        await _service.configureOpenRouter(apiKey: apiKey, baseUrl: baseUrl);
-      }
-      final data = await _fetchState();
-      state = AsyncValue.data(data);
-    } catch (error, stackTrace) {
-      if (previous != null) {
-        state = AsyncValue.data(previous.copyWith(isRefreshing: false));
-      } else {
-        state = AsyncValue.error(error, stackTrace);
-      }
-      rethrow;
-    }
-  }
-
-  Future<bool> testProviderConnection(LLMProvider provider) async {
-    try {
-      return await _service.testProviderConnectivity(provider);
+      return await _service.testConnection(provider);
     } catch (e) {
       return false;
-    }
-  }
-
-  Future<void> updateConfigurationSettings(Map<String, dynamic> settings) async {
-    final previous = state.valueOrNull;
-    if (previous != null) {
-      state = AsyncValue.data(previous.copyWith(isRefreshing: true));
-    }
-
-    try {
-      await _service.updateConfigurationSettings(settings);
-      final data = await _fetchState();
-      state = AsyncValue.data(data);
-    } catch (error, stackTrace) {
-      if (previous != null) {
-        state = AsyncValue.data(previous.copyWith(isRefreshing: false));
-      } else {
-        state = AsyncValue.error(error, stackTrace);
-      }
-      rethrow;
     }
   }
 
@@ -225,15 +207,18 @@ class LlmDashboardNotifier extends StateNotifier<AsyncValue<LlmDashboardState>> 
     try {
       return await _service.getSystemUsageStats(timeRange: timeRange);
     } catch (e) {
-      // Fallback to default usage stats
       return _getDefaultUsageStats();
     }
   }
 
-  Future<Map<LLMProvider, LLMStatusResponse>> getProviderStatusMap() async {
+  Future<Map<String, Map<String, dynamic>>> getProviderStatusMap() async {
     try {
       final statuses = await _service.getAllProvidersStatus();
-      return {for (final status in statuses) status.provider: status};
+      final statusMap = <String, Map<String, dynamic>>{};
+      for (final status in statuses) {
+        statusMap[status['provider'] as String] = status;
+      }
+      return statusMap;
     } catch (e) {
       return {};
     }
@@ -249,7 +234,7 @@ class LlmDashboardNotifier extends StateNotifier<AsyncValue<LlmDashboardState>> 
       'log_level': 'info',
       'auto_refresh_status': true,
       'default_provider': 'local',
-      'default_model': 'default',
+      'default_model': 'llama2:7b',
     };
   }
 

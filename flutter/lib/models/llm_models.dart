@@ -43,7 +43,7 @@ class LLMProviderSettings {
 
   Map<String, dynamic> toJson() {
     return {
-      'provider': provider.name,
+      'provider': provider.value, // Use value instead of name to match backend
       'api_key': apiKey,
       'base_url': baseUrl,
       'timeout': timeout,
@@ -89,7 +89,7 @@ class LLMModelConfig {
   Map<String, dynamic> toJson() {
     return {
       'model_name': modelName,
-      'provider': provider.name,
+      'provider': provider.value, // Use value instead of name to match backend
       'context_window': contextWindow,
       'max_tokens': maxTokens,
       'temperature': temperature,
@@ -130,7 +130,7 @@ class LLMStatusResponse {
 
   Map<String, dynamic> toJson() {
     return {
-      'provider': provider.name,
+      'provider': provider.value, // Use value instead of name
       'available': available,
       'healthy': healthy,
       'response_time_ms': responseTimeMs,
@@ -178,7 +178,7 @@ class LLMConfigResponse {
   Map<String, dynamic> toJson() {
     final providersJson = <String, dynamic>{};
     providers.forEach((key, value) {
-      providersJson[key.name] = value.toJson();
+      providersJson[key.value] = value.toJson(); // Use value instead of name
     });
 
     final modelsJson = <String, dynamic>{};
@@ -187,7 +187,7 @@ class LLMConfigResponse {
     });
 
     return {
-      'active_provider': activeProvider.name,
+      'active_provider': activeProvider.value, // Use value instead of name
       'active_model': activeModel,
       'providers': providersJson,
       'models': modelsJson,
@@ -240,8 +240,8 @@ class LLMProvidersListResponse {
 
   Map<String, dynamic> toJson() {
     return {
-      'providers': providers.map((e) => e.name).toList(),
-      'active_provider': activeProvider.name,
+      'providers': providers.map((e) => e.value).toList(), // Use value instead of name
+      'active_provider': activeProvider.value, // Use value instead of name
     };
   }
 }
@@ -275,7 +275,7 @@ class LLMModelsListResponse {
   Map<String, dynamic> toJson() {
     final modelsByProviderJson = <String, dynamic>{};
     modelsByProvider.forEach((key, value) {
-      modelsByProviderJson[key.name] = value;
+      modelsByProviderJson[key.value] = value; // Use value instead of name
     });
 
     return {
@@ -491,7 +491,7 @@ class PerformanceReportResponse {
 
   Map<String, dynamic> toJson() {
     return {
-      'provider': provider.name,
+      'provider': provider.value, // Use value instead of name
       'metrics': metrics.toJson(),
       'time_range': timeRange,
       'generated_at': generatedAt.toIso8601String(),
@@ -542,7 +542,7 @@ class LLMHealthSummary {
       'local_models_loaded': localModelsLoaded,
       'local_models_available': localModelsAvailable,
       'openrouter_connected': openRouterConnected,
-      'active_provider': activeProvider.name,
+      'active_provider': activeProvider.value, // Use value instead of name
       'active_model': activeModel,
       'system_healthy': systemHealthy,
     };
@@ -583,7 +583,7 @@ class LLMTestResponse {
   Map<String, dynamic> toJson() {
     return {
       'model_name': modelName,
-      'provider': provider.name,
+      'provider': provider.value, // Use value instead of name
       'prompt': prompt,
       'response': response,
       'tokens_used': tokensUsed,

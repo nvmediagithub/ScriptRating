@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
-import '../../models/llm_models.dart';
-import '../../models/llm_provider.dart';
 
 class StatsDisplay extends StatefulWidget {
-  final Map<LLMProvider, LLMStatusResponse> providerStatuses;
+  final Map<String, Map<String, dynamic>> providerStatuses;
   final Map<String, dynamic> usageStats;
-  final List<PerformanceReportResponse> performanceReports;
+  final List<Map<String, dynamic>> performanceReports;
   final bool isLoading;
 
   const StatsDisplay({
@@ -189,13 +187,20 @@ class _StatsDisplayState extends State<StatsDisplay> with TickerProviderStateMix
 
         // Performance reports
         Expanded(
-          child: ListView.builder(
-            itemCount: widget.performanceReports.length,
-            itemBuilder: (context, index) {
-              final report = widget.performanceReports[index];
-              return _buildPerformanceReportCard(report);
-            },
-          ),
+          child: widget.performanceReports.isEmpty
+              ? Center(
+                  child: Text(
+                    'No performance reports available',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: widget.performanceReports.length,
+                  itemBuilder: (context, index) {
+                    final report = widget.performanceReports[index];
+                    return _buildPerformanceReportCard(report);
+                  },
+                ),
         ),
       ],
     );
@@ -307,9 +312,12 @@ class _StatsDisplayState extends State<StatsDisplay> with TickerProviderStateMix
     );
   }
 
-  Widget _buildProviderStatusRow(LLMProvider provider, LLMStatusResponse status) {
-    final isHealthy = status.available && status.healthy;
-    final healthColor = isHealthy ? Colors.green : (status.available ? Colors.orange : Colors.red);
+  Widget _buildProviderStatusRow(String provider, Map<String, dynamic> status) {
+    final available = status['available'] as bool? ?? false;
+    final healthy = status['healthy'] as bool? ?? false;
+    final isHealthy = available && healthy;
+    final healthColor = isHealthy ? Colors.green : (available ? Colors.orange : Colors.red);
+    final responseTimeMs = status['response_time_ms'] as double?;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -328,19 +336,19 @@ class _StatsDisplayState extends State<StatsDisplay> with TickerProviderStateMix
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  provider.value,
+                  provider,
                   style: TextStyle(fontWeight: FontWeight.bold, color: healthColor),
                 ),
                 Text(
-                  isHealthy ? 'Healthy' : (status.available ? 'Unhealthy' : 'Unavailable'),
+                  isHealthy ? 'Healthy' : (available ? 'Unhealthy' : 'Unavailable'),
                   style: TextStyle(fontSize: 12, color: healthColor),
                 ),
               ],
             ),
           ),
-          if (status.responseTimeMs != null)
+          if (responseTimeMs != null)
             Text(
-              '${status.responseTimeMs!.toStringAsFixed(0)}ms',
+              '${responseTimeMs.toStringAsFixed(0)}ms',
               style: TextStyle(fontSize: 12, color: healthColor),
             ),
         ],
@@ -348,11 +356,19 @@ class _StatsDisplayState extends State<StatsDisplay> with TickerProviderStateMix
     );
   }
 
-  Widget _buildPerformanceReportCard(PerformanceReportResponse report) {
-    final metrics = report.metrics;
-    final successRate = metrics.totalRequests > 0
-        ? ((metrics.successfulRequests / metrics.totalRequests) * 100)
-        : 0.0;
+  Widget _buildPerformanceReportCard(Map<String, dynamic> report) {
+    final provider = report['provider'] as String? ?? 'unknown';
+    final metrics = report['metrics'] as Map<String, dynamic>? ?? {};
+    final timeRange = report['time_range'] as String? ?? 'unknown';
+    final generatedAt = report['generated_at'] != null
+        ? DateTime.parse(report['generated_at'] as String)
+        : DateTime.now();
+
+    final totalRequests = metrics['total_requests'] as int? ?? 0;
+    final successfulRequests = metrics['successful_requests'] as int? ?? 0;
+    final avgResponseTimeMs = metrics['average_response_time_ms'] as double? ?? 0.0;
+
+    final successRate = totalRequests > 0 ? ((successfulRequests / totalRequests) * 100) : 0.0;
 
     return Card(
       child: Padding(
@@ -362,11 +378,11 @@ class _StatsDisplayState extends State<StatsDisplay> with TickerProviderStateMix
           children: [
             Row(
               children: [
-                Icon(_getProviderIcon(report.provider), color: Theme.of(context).primaryColor),
+                Icon(_getProviderIcon(provider), color: Theme.of(context).primaryColor),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${report.provider.value} - ${report.timeRange}',
+                    '$provider - $timeRange',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -375,21 +391,21 @@ class _StatsDisplayState extends State<StatsDisplay> with TickerProviderStateMix
             const SizedBox(height: 8),
             Row(
               children: [
-                Expanded(child: _buildMiniMetric('Requests', metrics.totalRequests.toString())),
+                Expanded(child: _buildMiniMetric('Requests', totalRequests.toString())),
                 Expanded(
                   child: _buildMiniMetric('Success Rate', '${successRate.toStringAsFixed(1)}%'),
                 ),
                 Expanded(
                   child: _buildMiniMetric(
                     'Avg Response',
-                    '${metrics.averageResponseTimeMs.toStringAsFixed(0)}ms',
+                    '${avgResponseTimeMs.toStringAsFixed(0)}ms',
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              'Generated: ${_formatTime(report.generatedAt)}',
+              'Generated: ${_formatTime(generatedAt)}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -410,12 +426,14 @@ class _StatsDisplayState extends State<StatsDisplay> with TickerProviderStateMix
     );
   }
 
-  IconData _getProviderIcon(LLMProvider provider) {
-    switch (provider) {
-      case LLMProvider.local:
+  IconData _getProviderIcon(String provider) {
+    switch (provider.toLowerCase()) {
+      case 'local':
         return Icons.computer;
-      case LLMProvider.openrouter:
+      case 'openrouter':
         return Icons.cloud;
+      default:
+        return Icons.settings;
     }
   }
 
