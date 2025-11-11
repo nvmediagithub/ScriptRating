@@ -1,0 +1,38 @@
+{
+  "id": "b3746b4a-e2c7-4c8a-8fd1-9fc6a1671b75",
+  "title": "Local Provider Test",
+  "llm_provider": "LOCAL",
+  "llm_model": "llama2:7b",
+  "created_at": "2025-11-11T10:58:17.191210",
+  "updated_at": "2025-11-11T10:58:39.661940",
+  "is_active": true,
+  "settings": {},
+  "messages": [
+    {
+      "id": "dd4e32b0-f876-44e9-b18f-0e5deafe1eb0",
+      "role": "user",
+      "content": "Test provider switching with a short message.",
+      "created_at": "2025-11-11T10:58:39.660789",
+      "updated_at": "2025-11-11T10:58:39.660789",
+      "is_streaming": false,
+      "tokens_used": 0,
+      "response_time_ms": 0,
+      "error_message": null,
+      "metadata": {}
+    },
+    {
+      "id": "b6c24343-8927-4694-bf6c-bc20c2d85179",
+      "role": "assistant",
+      "content": "I understand your question: 'Test provider switching with a short message.'. As a local AI assistant, I'm here to help you with that.",
+      "created_at": "2025-11-11T10:58:39.661940",
+      "updated_at": "2025-11-11T10:58:40.163822",
+      "is_streaming": false,
+      "tokens_used": 29,
+      "response_time_ms": 500,
+      "error_message": null,
+      "metadata": {
+        "is_processing": true
+      }
+    }
+  ]
+}

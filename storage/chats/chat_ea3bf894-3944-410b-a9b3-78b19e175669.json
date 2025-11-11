@@ -1,0 +1,11 @@
+{
+  "id": "ea3bf894-3944-410b-a9b3-78b19e175669",
+  "title": "Test Chat",
+  "llm_provider": "LOCAL",
+  "llm_model": "llama2:7b",
+  "created_at": "2025-11-11T09:33:55.478590",
+  "updated_at": "2025-11-11T09:33:55.478590",
+  "is_active": true,
+  "settings": {},
+  "messages": []
+}

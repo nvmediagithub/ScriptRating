@@ -14,7 +14,39 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from app.presentation.api.schemas import AgeRating, Category, Severity
+# Avoid circular imports by defining enums locally
+from enum import Enum
+
+class Severity(str, Enum):
+    """Content severity levels."""
+    NONE = "none"
+    MILD = "mild"
+    MODERATE = "moderate"
+    SEVERE = "severe"
+
+class Category(str, Enum):
+    """Content categories for analysis."""
+    VIOLENCE = "violence"
+    SEXUAL_CONTENT = "sexual_content"
+    LANGUAGE = "language"
+    ALCOHOL_DRUGS = "alcohol_drugs"
+    DISTURBING_SCENES = "disturbing_scenes"
+
+class AgeRating(str, Enum):
+    """Age rating categories."""
+    ZERO_PLUS = "0+"
+    SIX_PLUS = "6+"
+    TWELVE_PLUS = "12+"
+    SIXTEEN_PLUS = "16+"
+    EIGHTEEN_PLUS = "18+"
+
+# Runtime imports
+def get_enums():
+    """Lazy import to avoid circular dependencies."""
+    from app.presentation.api.schemas import AgeRating, Category, Severity
+    return AgeRating, Category, Severity
+
+
 
 from .knowledge_base import KnowledgeBase
 from .script_store import ScriptStore
@@ -22,7 +54,8 @@ from .script_store import ScriptStore
 # Configure logging
 logger = logging.getLogger(__name__)
 
-CATEGORY_KEYWORDS: Dict[Category, Dict[Severity, List[str]]] = {
+# Category keywords using local enums
+CATEGORY_KEYWORDS = {
     Category.VIOLENCE: {
         Severity.SEVERE: ["убий", "расстрел", "кров", "пытк", "казн"],
         Severity.MODERATE: ["драка", "бой", "оруж", "удар", "атака"],
@@ -50,6 +83,7 @@ CATEGORY_KEYWORDS: Dict[Category, Dict[Severity, List[str]]] = {
     },
 }
 
+# Severity and rating order using local enums
 SEVERITY_ORDER = [Severity.NONE, Severity.MILD, Severity.MODERATE, Severity.SEVERE]
 RATING_ORDER = [
     AgeRating.ZERO_PLUS,

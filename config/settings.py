@@ -47,6 +47,7 @@ class Settings(BaseSettings):
 
     # OpenRouter integration
     openrouter_api_key: Optional[str] = None
+    openrouter_base_model: Optional[str] = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openrouter_referer: Optional[str] = None
     openrouter_app_name: Optional[str] = "ScriptRating"

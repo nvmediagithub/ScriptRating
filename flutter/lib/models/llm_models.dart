@@ -2,6 +2,20 @@
 
 import 'llm_provider.dart';
 
+// Helper function to parse provider strings
+LLMProvider _parseProvider(String providerString) {
+  try {
+    if (providerString == 'local' || providerString == 'LOCAL') {
+      return LLMProvider.local;
+    } else if (providerString == 'openrouter' || providerString == 'OPENROUTER') {
+      return LLMProvider.openrouter;
+    }
+  } catch (e) {
+    // Fallback to local if parsing fails
+  }
+  return LLMProvider.local;
+}
+
 class LLMProviderSettings {
   final LLMProvider provider;
   final String? apiKey;
@@ -19,11 +33,9 @@ class LLMProviderSettings {
 
   factory LLMProviderSettings.fromJson(Map<String, dynamic> json) {
     return LLMProviderSettings(
-      provider: LLMProvider.values.firstWhere(
-        (e) => e.name == json['provider'],
-      ),
-      apiKey: json['api_key'],
-      baseUrl: json['base_url'],
+      provider: _parseProvider(json['provider'] ?? 'local'),
+      apiKey: json['api_key'] ?? json['apiKey'],
+      baseUrl: json['base_url'] ?? json['baseUrl'],
       timeout: json['timeout'] ?? 30,
       maxRetries: json['max_retries'] ?? 3,
     );
@@ -64,9 +76,7 @@ class LLMModelConfig {
   factory LLMModelConfig.fromJson(Map<String, dynamic> json) {
     return LLMModelConfig(
       modelName: json['model_name'],
-      provider: LLMProvider.values.firstWhere(
-        (e) => e.name == json['provider'],
-      ),
+      provider: _parseProvider(json['provider'] ?? 'local'),
       contextWindow: json['context_window'] ?? 4096,
       maxTokens: json['max_tokens'] ?? 2048,
       temperature: json['temperature'] ?? 0.7,
@@ -109,9 +119,7 @@ class LLMStatusResponse {
 
   factory LLMStatusResponse.fromJson(Map<String, dynamic> json) {
     return LLMStatusResponse(
-      provider: LLMProvider.values.firstWhere(
-        (e) => e.name == json['provider'],
-      ),
+      provider: _parseProvider(json['provider'] ?? 'local'),
       available: json['available'],
       healthy: json['healthy'],
       responseTimeMs: json['response_time_ms']?.toDouble(),
@@ -149,7 +157,7 @@ class LLMConfigResponse {
     final providersJson = json['providers'] as Map<String, dynamic>;
     final providers = <LLMProvider, LLMProviderSettings>{};
     providersJson.forEach((key, value) {
-      final provider = LLMProvider.values.firstWhere((e) => e.name == key);
+      final provider = _parseProvider(key);
       providers[provider] = LLMProviderSettings.fromJson(value);
     });
 
@@ -160,9 +168,7 @@ class LLMConfigResponse {
     });
 
     return LLMConfigResponse(
-      activeProvider: LLMProvider.values.firstWhere(
-        (e) => e.name == json['active_provider'],
-      ),
+      activeProvider: _parseProvider(json['active_provider'] ?? 'local'),
       activeModel: json['active_model'],
       providers: providers,
       models: models,
@@ -223,19 +229,12 @@ class LLMProvidersListResponse {
   final List<LLMProvider> providers;
   final LLMProvider activeProvider;
 
-  LLMProvidersListResponse({
-    required this.providers,
-    required this.activeProvider,
-  });
+  LLMProvidersListResponse({required this.providers, required this.activeProvider});
 
   factory LLMProvidersListResponse.fromJson(Map<String, dynamic> json) {
     return LLMProvidersListResponse(
-      providers: (json['providers'] as List<dynamic>)
-          .map((e) => LLMProvider.values.firstWhere((p) => p.name == e))
-          .toList(),
-      activeProvider: LLMProvider.values.firstWhere(
-        (e) => e.name == json['active_provider'],
-      ),
+      providers: (json['providers'] as List<dynamic>).map((e) => _parseProvider(e)).toList(),
+      activeProvider: _parseProvider(json['active_provider'] ?? 'local'),
     );
   }
 
@@ -259,11 +258,10 @@ class LLMModelsListResponse {
   });
 
   factory LLMModelsListResponse.fromJson(Map<String, dynamic> json) {
-    final modelsByProviderJson =
-        json['models_by_provider'] as Map<String, dynamic>;
+    final modelsByProviderJson = json['models_by_provider'] as Map<String, dynamic>;
     final modelsByProvider = <LLMProvider, List<String>>{};
     modelsByProviderJson.forEach((key, value) {
-      final provider = LLMProvider.values.firstWhere((e) => e.name == key);
+      final provider = _parseProvider(key);
       modelsByProvider[provider] = List<String>.from(value);
     });
 
@@ -314,9 +312,7 @@ class LocalModelInfo {
       loaded: json['loaded'],
       contextWindow: json['context_window'],
       maxTokens: json['max_tokens'],
-      lastUsed: json['last_used'] != null
-          ? DateTime.parse(json['last_used'])
-          : null,
+      lastUsed: json['last_used'] != null ? DateTime.parse(json['last_used']) : null,
     );
   }
 
@@ -360,24 +356,16 @@ class LocalModelsListResponse {
 
   factory LocalModelsListResponse.fromJson(Map<String, dynamic> json) {
     return LocalModelsListResponse(
-      models: (json['models'] as List<dynamic>)
-          .map((e) => LocalModelInfo.fromJson(e))
-          .toList(),
+      models: (json['models'] as List<dynamic>).map((e) => LocalModelInfo.fromJson(e)).toList(),
       loadedModels: List<String>.from(json['loaded_models']),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'models': models.map((e) => e.toJson()).toList(),
-      'loaded_models': loadedModels,
-    };
+    return {'models': models.map((e) => e.toJson()).toList(), 'loaded_models': loadedModels};
   }
 
-  LocalModelsListResponse copyWith({
-    List<LocalModelInfo>? models,
-    List<String>? loadedModels,
-  }) {
+  LocalModelsListResponse copyWith({List<LocalModelInfo>? models, List<String>? loadedModels}) {
     return LocalModelsListResponse(
       models: models ?? this.models,
       loadedModels: loadedModels ?? this.loadedModels,
@@ -494,9 +482,7 @@ class PerformanceReportResponse {
 
   factory PerformanceReportResponse.fromJson(Map<String, dynamic> json) {
     return PerformanceReportResponse(
-      provider: LLMProvider.values.firstWhere(
-        (e) => e.name == json['provider'],
-      ),
+      provider: _parseProvider(json['provider'] ?? 'local'),
       metrics: PerformanceMetrics.fromJson(json['metrics']),
       timeRange: json['time_range'],
       generatedAt: DateTime.parse(json['generated_at']),
@@ -535,11 +521,7 @@ class LLMHealthSummary {
   factory LLMHealthSummary.fromJson(Map<String, dynamic> json) {
     final statusList =
         (json['providers_status'] as List<dynamic>?)
-            ?.map(
-              (item) => LLMStatusResponse.fromJson(
-                Map<String, dynamic>.from(item as Map),
-              ),
-            )
+            ?.map((item) => LLMStatusResponse.fromJson(Map<String, dynamic>.from(item as Map)))
             .toList() ??
         <LLMStatusResponse>[];
 
@@ -548,9 +530,7 @@ class LLMHealthSummary {
       localModelsLoaded: json['local_models_loaded'] ?? 0,
       localModelsAvailable: json['local_models_available'] ?? 0,
       openRouterConnected: json['openrouter_connected'] ?? false,
-      activeProvider: LLMProvider.values.firstWhere(
-        (provider) => provider.name == json['active_provider'],
-      ),
+      activeProvider: _parseProvider(json['active_provider'] ?? 'local'),
       activeModel: json['active_model'] ?? '',
       systemHealthy: json['system_healthy'] ?? false,
     );
@@ -558,9 +538,7 @@ class LLMHealthSummary {
 
   Map<String, dynamic> toJson() {
     return {
-      'providers_status': providersStatus
-          .map((status) => status.toJson())
-          .toList(),
+      'providers_status': providersStatus.map((status) => status.toJson()).toList(),
       'local_models_loaded': localModelsLoaded,
       'local_models_available': localModelsAvailable,
       'openrouter_connected': openRouterConnected,
@@ -593,9 +571,7 @@ class LLMTestResponse {
   factory LLMTestResponse.fromJson(Map<String, dynamic> json) {
     return LLMTestResponse(
       modelName: json['model_name'] as String,
-      provider: LLMProvider.values.firstWhere(
-        (e) => e.name == json['provider'],
-      ),
+      provider: _parseProvider(json['provider'] ?? 'local'),
       prompt: json['prompt'] as String,
       response: json['response'] as String,
       tokensUsed: json['tokens_used'] as int,

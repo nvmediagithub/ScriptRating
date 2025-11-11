@@ -48,13 +48,13 @@ OPENROUTER_MAX_RETRIES = 3
 
 PROVIDER_SETTINGS: Dict[LLMProvider, LLMProviderSettings] = {
     LLMProvider.LOCAL: LLMProviderSettings(
-        provider=LLMProvider.LOCAL,
+        provider="local",  # Use string value instead of enum to avoid validation issues
         base_url="http://localhost:11434",
         timeout=30,
         max_retries=3,
     ),
     LLMProvider.OPENROUTER: LLMProviderSettings(
-        provider=LLMProvider.OPENROUTER,
+        provider="openrouter",  # Use string value instead of enum to avoid validation issues
         api_key="configured" if openrouter_client.has_api_key else None,
         base_url=openrouter_client.base_url,
         timeout=openrouter_client.timeout,
@@ -65,7 +65,7 @@ PROVIDER_SETTINGS: Dict[LLMProvider, LLMProviderSettings] = {
 MOCK_MODELS: Dict[str, LLMModelConfig] = {
     "llama2:7b": LLMModelConfig(
         model_name="llama2:7b",
-        provider=LLMProvider.LOCAL,
+        provider="local",  # Use string value instead of enum to avoid validation issues
         context_window=4096,
         max_tokens=2048,
         temperature=0.7,
@@ -75,7 +75,7 @@ MOCK_MODELS: Dict[str, LLMModelConfig] = {
     ),
     "mistral:7b": LLMModelConfig(
         model_name="mistral:7b",
-        provider=LLMProvider.LOCAL,
+        provider="local",  # Use string value instead of enum to avoid validation issues
         context_window=4096,
         max_tokens=2048,
         temperature=0.7,
@@ -101,7 +101,7 @@ def _update_provider_settings(settings_update: LLMProviderSettings) -> None:
         openrouter_client.timeout = settings_update.timeout
 
         sanitized = LLMProviderSettings(
-            provider=LLMProvider.OPENROUTER,
+            provider="openrouter",  # Use string value instead of enum to avoid validation issues
             api_key="configured" if openrouter_client.has_api_key else None,
             base_url=openrouter_client.base_url,
             timeout=openrouter_client.timeout,
@@ -248,7 +248,7 @@ async def get_llm_config():
         for model_name in remote_models:
             dynamic_models[model_name] = LLMModelConfig(
                 model_name=model_name,
-                provider=LLMProvider.OPENROUTER,
+                provider="openrouter",  # Use string value instead of enum to avoid validation issues
                 context_window=4096,
                 max_tokens=2048,
                 temperature=0.7,
@@ -260,7 +260,7 @@ async def get_llm_config():
     # Keep provider metadata in sync with actual client state (without exposing key)
     current_openrouter_settings = PROVIDER_SETTINGS[LLMProvider.OPENROUTER]
     PROVIDER_SETTINGS[LLMProvider.OPENROUTER] = LLMProviderSettings(
-        provider=LLMProvider.OPENROUTER,
+        provider="openrouter",  # Use string value instead of enum to avoid validation issues
         api_key="configured" if openrouter_client.has_api_key else None,
         base_url=current_openrouter_settings.base_url,
         timeout=current_openrouter_settings.timeout,

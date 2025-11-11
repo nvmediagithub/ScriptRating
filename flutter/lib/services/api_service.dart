@@ -26,7 +26,7 @@ class ApiService {
   final Dio _dio;
 
   ApiService(this._dio) {
-    _dio.options.baseUrl = 'http://localhost:8000/api/v1';
+    _dio.options.baseUrl = 'http://localhost:8000/api';
     _dio.options.connectTimeout = const Duration(seconds: 30);
     _dio.options.receiveTimeout = const Duration(seconds: 30);
     _dio.options.headers['Content-Type'] = 'application/json';
@@ -44,9 +44,7 @@ class ApiService {
   Future<List<Script>> getScripts() async {
     try {
       final response = await _dio.get('/scripts');
-      return (response.data as List)
-          .map((json) => Script.fromJson(json))
-          .toList();
+      return (response.data as List).map((json) => Script.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to load scripts: $e');
     }
@@ -68,8 +66,7 @@ class ApiService {
         'filename': filename,
         'document_type': documentType.value,
       });
-      final response =
-          await _dio.post('/documents/upload', data: formData);
+      final response = await _dio.post('/documents/upload', data: formData);
       return response.data as Map<String, dynamic>;
     } catch (e) {
       throw Exception('Failed to upload document: $e');

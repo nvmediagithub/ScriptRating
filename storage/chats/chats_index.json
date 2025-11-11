@@ -1,0 +1,46 @@
+{
+  "chats": [
+    {
+      "id": "ea3bf894-3944-410b-a9b3-78b19e175669",
+      "title": "Test Chat",
+      "created_at": "2025-11-11T09:33:55.478590",
+      "updated_at": "2025-11-11T09:33:55.478590",
+      "is_active": true
+    },
+    {
+      "id": "dd43d1f0-823b-4e6e-aaa9-4089cd1c8830",
+      "title": "Test Chat",
+      "created_at": "2025-11-11T09:34:56.294890",
+      "updated_at": "2025-11-11T09:34:56.294890",
+      "is_active": true
+    },
+    {
+      "id": "4876911e-0c3a-4be8-a2f4-5b44116746f9",
+      "title": "Test Chat with OpenRouter",
+      "created_at": "2025-11-11T10:09:10.734321",
+      "updated_at": "2025-11-11T10:09:10.734321",
+      "is_active": true
+    },
+    {
+      "id": "a6e27d3e-fa94-429b-a0ed-4ebea735d986",
+      "title": "Real OpenRouter Test Chat",
+      "created_at": "2025-11-11T10:51:17.884822",
+      "updated_at": "2025-11-11T10:51:17.884822",
+      "is_active": true
+    },
+    {
+      "id": "f5e6a968-1e16-4006-883d-be65d5390f09",
+      "title": "Error Test Chat",
+      "created_at": "2025-11-11T10:57:11.351183",
+      "updated_at": "2025-11-11T10:57:11.351183",
+      "is_active": true
+    },
+    {
+      "id": "b3746b4a-e2c7-4c8a-8fd1-9fc6a1671b75",
+      "title": "Local Provider Test",
+      "created_at": "2025-11-11T10:58:17.191210",
+      "updated_at": "2025-11-11T10:58:17.191210",
+      "is_active": true
+    }
+  ]
+}

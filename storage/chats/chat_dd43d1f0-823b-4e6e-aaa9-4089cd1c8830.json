@@ -1,0 +1,38 @@
+{
+  "id": "dd43d1f0-823b-4e6e-aaa9-4089cd1c8830",
+  "title": "Test Chat",
+  "llm_provider": "LOCAL",
+  "llm_model": "llama2:7b",
+  "created_at": "2025-11-11T09:34:56.294890",
+  "updated_at": "2025-11-11T09:35:38.850635",
+  "is_active": true,
+  "settings": {},
+  "messages": [
+    {
+      "id": "29ae0170-8f97-4dfd-a145-87b80ee04aaa",
+      "role": "user",
+      "content": "Hello, how are you?",
+      "created_at": "2025-11-11T09:35:38.849682",
+      "updated_at": "2025-11-11T09:35:38.849682",
+      "is_streaming": false,
+      "tokens_used": 0,
+      "response_time_ms": 0,
+      "error_message": null,
+      "metadata": {}
+    },
+    {
+      "id": "d2d5c3ba-5873-45c0-8186-73787495805d",
+      "role": "assistant",
+      "content": "I understand your question: 'Hello, how are you?'. Let me help you with that.",
+      "created_at": "2025-11-11T09:35:38.850635",
+      "updated_at": "2025-11-11T09:35:39.851876",
+      "is_streaming": false,
+      "tokens_used": 18,
+      "response_time_ms": 1000,
+      "error_message": null,
+      "metadata": {
+        "is_processing": true
+      }
+    }
+  ]
+}

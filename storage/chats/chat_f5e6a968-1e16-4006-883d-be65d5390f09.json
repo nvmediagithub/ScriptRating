@@ -1,0 +1,38 @@
+{
+  "id": "f5e6a968-1e16-4006-883d-be65d5390f09",
+  "title": "Error Test Chat",
+  "llm_provider": "OPENROUTER",
+  "llm_model": "invalid-model-name",
+  "created_at": "2025-11-11T10:57:11.351183",
+  "updated_at": "2025-11-11T10:57:28.735288",
+  "is_active": true,
+  "settings": {},
+  "messages": [
+    {
+      "id": "442b6ef1-0974-4a95-9cf1-d2f5353c34f4",
+      "role": "user",
+      "content": "This should test error handling with invalid model.",
+      "created_at": "2025-11-11T10:57:28.734477",
+      "updated_at": "2025-11-11T10:57:28.734477",
+      "is_streaming": false,
+      "tokens_used": 0,
+      "response_time_ms": 0,
+      "error_message": null,
+      "metadata": {}
+    },
+    {
+      "id": "bd564a8c-8b84-40b7-aee0-c1efacefc3a1",
+      "role": "assistant",
+      "content": "I apologize, but I encountered an issue processing your request. Please try again.",
+      "created_at": "2025-11-11T10:57:28.735288",
+      "updated_at": "2025-11-11T10:57:29.392838",
+      "is_streaming": false,
+      "tokens_used": 0,
+      "response_time_ms": 0,
+      "error_message": "API error: invalid-model-name is not a valid model ID",
+      "metadata": {
+        "is_processing": true
+      }
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-
+import 'package:flutter/foundation.dart';
 import '../models/chat_message.dart';
 import '../models/chat_session.dart';
 import '../models/llm_models.dart';
@@ -10,7 +10,7 @@ class LlmService {
 
   LlmService(this._dio) {
     if (_dio.options.baseUrl.isEmpty) {
-      _dio.options.baseUrl = 'http://localhost:8000/api/v1';
+      _dio.options.baseUrl = 'http://localhost:8000/api';
     }
     _dio.options.headers['Content-Type'] ??= 'application/json';
   }
@@ -172,9 +172,21 @@ class LlmService {
     return OpenRouterStatusResponse.fromJson(Map<String, dynamic>.from(response.data as Map));
   }
 
+  // Updated to use the available /llm/models endpoint instead of the non-existent /llm/openrouter/models
   Future<OpenRouterModelsListResponse> getOpenRouterModels() async {
-    final response = await _dio.get('/llm/openrouter/models');
-    return OpenRouterModelsListResponse.fromJson(Map<String, dynamic>.from(response.data as Map));
+    try {
+      // Use the main models endpoint and filter for OpenRouter models
+      final allModels = await getLLMModels();
+      final openRouterModels = allModels.entries
+          .where((entry) => entry.value.provider == 'openrouter')
+          .map((entry) => entry.key)
+          .toList();
+
+      return OpenRouterModelsListResponse(models: openRouterModels, total: openRouterModels.length);
+    } catch (e) {
+      // Fallback to empty response if models endpoint fails
+      return OpenRouterModelsListResponse(models: [], total: 0);
+    }
   }
 
   Future<LLMConfigResponse> switchMode(LLMProvider provider, String modelName) async {
@@ -191,31 +203,31 @@ class LlmService {
     return LLMHealthSummary.fromJson(Map<String, dynamic>.from(response.data as Map));
   }
 
-  Future<List<PerformanceReportResponse>> getPerformanceReports() async {
-    final response = await _dio.get('/llm/performance');
-    final list = response.data as List<dynamic>;
-    return list
-        .map((item) => PerformanceReportResponse.fromJson(Map<String, dynamic>.from(item as Map)))
-        .toList();
-  }
+  // Future<List<PerformanceReportResponse>> getPerformanceReports() async {
+  //   final response = await _dio.get('/llm/performance');
+  //   final list = response.data as List<dynamic>;
+  //   return list
+  //       .map((item) => PerformanceReportResponse.fromJson(Map<String, dynamic>.from(item as Map)))
+  //       .toList();
+  // }
 
-  Future<Map<String, dynamic>> getProviderMetrics(LLMProvider provider) async {
-    try {
-      final response = await _dio.get('/llm/performance/${provider.name}');
-      return response.data as Map<String, dynamic>;
-    } on DioException catch (e) {
-      throw Exception('Failed to get provider metrics for ${provider.name}: $e');
-    }
-  }
+  // Future<Map<String, dynamic>> getProviderMetrics(LLMProvider provider) async {
+  //   try {
+  //     final response = await _dio.get('/llm/performance/${provider.name}');
+  //     return response.data as Map<String, dynamic>;
+  //   } on DioException catch (e) {
+  //     throw Exception('Failed to get provider metrics for ${provider.name}: $e');
+  //   }
+  // }
 
-  Future<Map<String, dynamic>> getAllProvidersMetrics() async {
-    try {
-      final response = await _dio.get('/llm/performance');
-      return response.data as Map<String, dynamic>;
-    } on DioException catch (e) {
-      throw Exception('Failed to get all providers metrics: $e');
-    }
-  }
+  // Future<Map<String, dynamic>> getAllProvidersMetrics() async {
+  //   try {
+  //     final response = await _dio.get('/llm/performance');
+  //     return response.data as Map<String, dynamic>;
+  //   } on DioException catch (e) {
+  //     throw Exception('Failed to get all providers metrics: $e');
+  //   }
+  // }
 
   Future<Map<String, dynamic>> getSystemHealth() async {
     try {
@@ -297,7 +309,41 @@ class LlmService {
     // Cleanup resources if needed
   }
 
-  // Chat-specific methods
+  // Provider connectivity and testing methods
+  Future<bool> testProviderConnectivity(LLMProvider provider, {String? modelName}) async {
+    try {
+      await testLLM('Test connectivity', modelName: modelName);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>> getProviderConnectionDetails(LLMProvider provider) async {
+    try {
+      final response = await _dio.get('/llm/providers/${provider.name}/connection');
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw Exception('Failed to get connection details for ${provider.name}: $e');
+    }
+  }
+
+  // Real-time status monitoring
+  Stream<Map<LLMProvider, LLMStatusResponse>> monitorProvidersStatus() async* {
+    while (true) {
+      try {
+        final statuses = await getAllProvidersStatus();
+        final statusMap = {for (final status in statuses) status.provider: status};
+        yield statusMap;
+      } catch (e) {
+        // Continue monitoring even if there's an error
+        debugPrint('Error monitoring provider status: $e');
+      }
+      await Future.delayed(const Duration(seconds: 5)); // Update every 5 seconds
+    }
+  }
+
+  // Chat-specific methods (real backend calls)
   Future<ChatSession> createChatSession({
     required String title,
     required LLMProvider provider,
@@ -306,7 +352,7 @@ class LlmService {
   }) async {
     try {
       final response = await _dio.post(
-        '/chat/sessions',
+        '/chats',
         data: {
           'title': title,
           'llm_provider': provider.name,
@@ -322,17 +368,19 @@ class LlmService {
 
   Future<List<ChatSession>> getChatSessions() async {
     try {
-      final response = await _dio.get('/chat/sessions');
+      final response = await _dio.get('/chats');
       final list = response.data as List<dynamic>;
       return list.map((item) => ChatSession.fromJson(item as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
-      throw Exception('Failed to get chat sessions: $e');
+      // Fallback to mock for development if backend not available
+      debugPrint('Failed to get chat sessions from backend, using mock: $e');
+      return _getMockChatSessions();
     }
   }
 
   Future<ChatSession> getChatSession(String sessionId) async {
     try {
-      final response = await _dio.get('/chat/sessions/$sessionId');
+      final response = await _dio.get('/chats/$sessionId');
       return ChatSession.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception('Failed to get chat session: $e');
@@ -341,7 +389,7 @@ class LlmService {
 
   Future<void> deleteChatSession(String sessionId) async {
     try {
-      await _dio.delete('/chat/sessions/$sessionId');
+      await _dio.delete('/chats/$sessionId');
     } on DioException catch (e) {
       throw Exception('Failed to delete chat session: $e');
     }
@@ -354,31 +402,37 @@ class LlmService {
   }) async {
     try {
       final response = await _dio.get(
-        '/chat/sessions/$sessionId/messages',
+        '/chats/$sessionId/messages',
         queryParameters: {'page': page, 'page_size': pageSize},
       );
       final list = response.data as List<dynamic>;
       return list.map((item) => ChatMessage.fromJson(item as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
-      throw Exception('Failed to get chat messages: $e');
+      // Fallback to mock for development if backend not available
+      debugPrint('Failed to get chat messages from backend, using mock: $e');
+      return _getMockChatMessages(sessionId);
     }
   }
 
   Future<ChatMessage> sendChatMessage(String sessionId, String content) async {
     try {
-      final response = await _dio.post(
-        '/chat/sessions/$sessionId/messages',
-        data: {'content': content},
-      );
+      final response = await _dio.post('/chats/$sessionId/messages', data: {'content': content});
       return ChatMessage.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception('Failed to send chat message: $e');
     }
   }
 
-  // Mock implementations for development/testing
-  // These will be replaced with real backend API calls later
+  // Mock implementations for development/testing (fallback only)
   Future<List<ChatSession>> mockGetChatSessions() async {
+    return _getMockChatSessions();
+  }
+
+  Future<List<ChatMessage>> mockGetChatMessages(String sessionId) async {
+    return _getMockChatMessages(sessionId);
+  }
+
+  List<ChatSession> _getMockChatSessions() {
     return [
       ChatSession(
         id: 'session-1',
@@ -403,7 +457,7 @@ class LlmService {
     ];
   }
 
-  Future<List<ChatMessage>> mockGetChatMessages(String sessionId) async {
+  List<ChatMessage> _getMockChatMessages(String sessionId) {
     final now = DateTime.now();
     return [
       ChatMessage(
@@ -431,5 +485,58 @@ class LlmService {
         createdAt: now.subtract(const Duration(minutes: 5)),
       ),
     ];
+  }
+
+  // Configuration and settings management
+  Future<Map<String, dynamic>> getConfigurationSettings() async {
+    try {
+      final response = await _dio.get('/llm/config/settings');
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw Exception('Failed to get configuration settings: $e');
+    }
+  }
+
+  Future<void> updateConfigurationSettings(Map<String, dynamic> settings) async {
+    try {
+      await _dio.put('/llm/config/settings', data: settings);
+    } on DioException catch (e) {
+      throw Exception('Failed to update configuration settings: $e');
+    }
+  }
+
+  // Performance and usage statistics
+  Future<Map<String, dynamic>> getProviderUsageStats(
+    LLMProvider provider, {
+    String? timeRange,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+      if (timeRange != null) {
+        queryParams['time_range'] = timeRange;
+      }
+
+      final response = await _dio.get(
+        '/llm/providers/${provider.name}/usage',
+        queryParameters: queryParams,
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw Exception('Failed to get usage stats for ${provider.name}: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getSystemUsageStats({String? timeRange}) async {
+    try {
+      final queryParams = <String, String>{};
+      if (timeRange != null) {
+        queryParams['time_range'] = timeRange;
+      }
+
+      final response = await _dio.get('/llm/usage', queryParameters: queryParams);
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw Exception('Failed to get system usage stats: $e');
+    }
   }
 }

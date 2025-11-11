@@ -9,7 +9,8 @@ class LlmDashboardState extends Equatable {
   final OpenRouterStatusResponse openRouterStatus;
   final OpenRouterModelsListResponse openRouterModels;
   final LLMHealthSummary healthSummary;
-  final List<PerformanceReportResponse> performanceReports;
+  // final List<PerformanceReportResponse> performanceReports;
+  final Map<String, dynamic> configurationSettings;
   final bool isRefreshing;
 
   const LlmDashboardState({
@@ -19,7 +20,8 @@ class LlmDashboardState extends Equatable {
     required this.openRouterStatus,
     required this.openRouterModels,
     required this.healthSummary,
-    required this.performanceReports,
+    // required this.performanceReports,
+    required this.configurationSettings,
     this.isRefreshing = false,
   });
 
@@ -30,7 +32,8 @@ class LlmDashboardState extends Equatable {
     OpenRouterStatusResponse? openRouterStatus,
     OpenRouterModelsListResponse? openRouterModels,
     LLMHealthSummary? healthSummary,
-    List<PerformanceReportResponse>? performanceReports,
+    // List<PerformanceReportResponse>? performanceReports,
+    Map<String, dynamic>? configurationSettings,
     bool? isRefreshing,
   }) {
     return LlmDashboardState(
@@ -40,7 +43,8 @@ class LlmDashboardState extends Equatable {
       openRouterStatus: openRouterStatus ?? this.openRouterStatus,
       openRouterModels: openRouterModels ?? this.openRouterModels,
       healthSummary: healthSummary ?? this.healthSummary,
-      performanceReports: performanceReports ?? this.performanceReports,
+      // performanceReports: performanceReports ?? this.performanceReports,
+      configurationSettings: configurationSettings ?? this.configurationSettings,
       isRefreshing: isRefreshing ?? this.isRefreshing,
     );
   }
@@ -53,7 +57,8 @@ class LlmDashboardState extends Equatable {
     openRouterStatus,
     openRouterModels,
     healthSummary,
-    performanceReports,
+    // performanceReports,
+    configurationSettings,
     isRefreshing,
   ];
 }
