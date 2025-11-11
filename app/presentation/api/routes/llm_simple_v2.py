@@ -36,8 +36,10 @@ router = APIRouter()
 # Simple provider configuration - just two modes
 class SimpleProviderConfig:
     def __init__(self):
-        # OpenRouter configuration from environment
-        self.openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+        # OpenRouter configuration from environment (using the enhanced settings)
+        from app.config import settings
+        self.openrouter_api_key = settings.get_openrouter_api_key()
+        self.openrouter_base_model = settings.get_openrouter_base_model()
         self.openrouter_base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
         
         # Provider availability
@@ -47,6 +49,14 @@ class SimpleProviderConfig:
         # Active mode
         self.active_mode = "local"
         self.active_model = "llama2:7b"
+
+    def get_openrouter_api_key(self) -> str:
+        """Get OpenRouter API key."""
+        return self.openrouter_api_key
+    
+    def get_openrouter_base_model(self) -> str:
+        """Get OpenRouter base model."""
+        return self.openrouter_base_model
 
 # Global configuration instance
 config = SimpleProviderConfig()
@@ -64,7 +74,7 @@ SIMPLE_MODELS = {
         "presence_penalty": 0.0,
     },
     "gpt-3.5-turbo": {
-        "model_name": "gpt-3.5-turbo",
+        "model_name": config.get_openrouter_base_model() or "gpt-3.5-turbo",
         "provider": "openrouter",
         "context_window": 4096,
         "max_tokens": 2048,
@@ -74,7 +84,7 @@ SIMPLE_MODELS = {
         "presence_penalty": 0.0,
     },
     "minimax/minimax-m2:free": {
-        "model_name": "minimax/minimax-m2:free",
+        "model_name": config.get_openrouter_base_model() or "minimax/minimax-m2:free",
         "provider": "openrouter",
         "context_window": 4096,
         "max_tokens": 2048,
@@ -116,7 +126,7 @@ async def get_llm_models():
     """
     models_by_provider = {
         "local": ["llama2:7b"],
-        "openrouter": ["gpt-3.5-turbo", "minimax/minimax-m2:free"]
+        "openrouter": [config.get_openrouter_base_model() or "gpt-3.5-turbo", "minimax/minimax-m2:free"]
     }
     
     return {
@@ -219,7 +229,7 @@ async def switch_llm_mode(provider: str, model_name: str = None):
         # Validate model
         if model_name is None:
             # Use default model for provider
-            model_name = "llama2:7b" if provider == "local" else "gpt-3.5-turbo"
+            model_name = "llama2:7b" if provider == "local" else (config.get_openrouter_base_model() or "gpt-3.5-turbo")
 
         if model_name not in SIMPLE_MODELS:
             raise HTTPException(status_code=400, detail="Model not available")

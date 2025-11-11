@@ -144,7 +144,7 @@ async def get_chat_sessions_endpoint(
                 user_id=current_user_id,
                 title="Analysis Discussion",
                 llm_provider="OPENROUTER",
-                llm_model="gpt-3.5-turbo",
+                llm_model=settings.get_openrouter_base_model() or "gpt-3.5-turbo",
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
                 is_active=True,

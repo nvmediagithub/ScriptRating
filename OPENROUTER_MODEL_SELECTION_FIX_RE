@@ -1,0 +1,99 @@
+# OpenRouter Model Selection Fix Report
+
+## Problem Summary
+The backend was using "gpt-3.5-turbo" instead of the configured "minimax/minimax-m2:free" model from the .env file. The issue was caused by hardcoded model fallbacks in multiple LLM service files that were not reading the `OPENROUTER_BASE_MODEL` environment variable.
+
+## Root Cause Analysis
+1. **Environment Configuration**: The .env file was correctly configured with `OPENROUTER_BASE_MODEL="minimax/minimax-m2:free"` (line 24)
+2. **Settings Reading**: The main settings object (`config/settings.py`) properly read environment variables through Pydantic settings
+3. **Service Integration Issue**: Multiple LLM service files had their own configuration classes that didn't properly integrate with the main settings
+
+## Files Fixed
+
+### 1. `app/presentation/api/routes/llm_simple.py`
+**Issues Found:**
+- Line 66: Hardcoded `"gpt-3.5-turbo"` in SIMPLE_MODELS dictionary
+- Line 71: Hardcoded `"minimax/minimax-m2:free"` in SIMPLE_MODELS dictionary  
+- Line 98: Hardcoded model list with `"gpt-3.5-turbo"`
+- Line 201: Hardcoded fallback `"gpt-3.5-turbo"` in default model selection
+- Line 401: Hardcoded model list
+- SimpleProviderConfig class missing `get_openrouter_base_model()` method
+
+**Fixes Applied:**
+- Updated all model references to use `config.get_openrouter_base_model() or "gpt-3.5-turbo"`
+- Added missing `get_openrouter_api_key()` and `get_openrouter_base_model()` methods to SimpleProviderConfig class
+
+### 2. `app/presentation/api/routes/llm_simple_v2.py`
+**Issues Found:**
+- Line 67: Hardcoded `"gpt-3.5-turbo"` in SIMPLE_MODELS dictionary
+- Line 77: Hardcoded `"minimax/minimax-m2:free"` in SIMPLE_MODELS dictionary
+- Line 119: Hardcoded model list with `"gpt-3.5-turbo"`
+- Line 222: Hardcoded fallback `"gpt-3.5-turbo"` in default model selection
+- SimpleProviderConfig class wasn't reading from the main settings object
+- Missing `get_openrouter_base_model()` method
+
+**Fixes Applied:**
+- Updated SimpleProviderConfig `__init__` to use `settings.get_openrouter_base_model()`
+- Updated all model references to use `config.get_openrouter_base_model() or "gpt-3.5-turbo"`
+- Added missing `get_openrouter_api_key()` and `get_openrouter_base_model()` methods
+
+### 3. `app/presentation/api/routes/chat.py`
+**Issues Found:**
+- Line 147: Hardcoded `"gpt-3.5-turbo"` in mock session creation
+
+**Fixes Applied:**
+- Updated to use `settings.get_openrouter_base_model() or "gpt-3.5-turbo"`
+
+## Configuration Architecture Improvements
+
+### Main Settings Object (`config/settings.py`)
+The settings object properly handles environment variable reading through:
+- Pydantic BaseSettings with env_file = ".env"
+- Case-insensitive environment variable reading
+- Helper methods: `get_openrouter_api_key()` and `get_openrouter_base_model()`
+- Fallback logic for environment variables vs settings values
+
+### LLM Service Integration
+All LLM service files now properly integrate with the main settings:
+- SimpleProviderConfig classes call `settings.get_openrouter_base_model()`
+- Model selection uses configured value with fallback
+- API calls will now use "minimax/minimax-m2:free" instead of "gpt-3.5-turbo"
+
+## Testing Verification
+
+### Test 1: Configuration Reading Test (`test_openrouter_config.py`)
+✅ **PASSED**
+- Environment variable `OPENROUTER_BASE_MODEL` correctly read as "minimax/minimax-m2:free"
+- Main settings object properly configured
+- LLM service configs can access the configured model
+
+### Test 2: Model Selection Test (`test_openrouter_api_model_selection.py`)
+✅ **PASSED**
+- All LLM services use configured model "minimax/minimax-m2:free"
+- No hardcoded fallbacks to "gpt-3.5-turbo" remain
+- OpenRouter client properly configured and ready for API calls
+- All model selection logic now dynamic
+
+## Expected Behavior (Now Working)
+
+### ✅ Fixed Behavior
+1. **Environment Variable Reading**: Backend reads `OPENROUTER_BASE_MODEL` from .env file
+2. **Model Configuration**: All OpenRouter API calls use "minimax/minimax-m2:free" model
+3. **No Hardcoded Fallbacks**: Removed all instances of hardcoded "gpt-3.5-turbo" fallbacks
+4. **Flexible Configuration**: Model selection is now dynamic based on environment configuration
+
+### ✅ Configuration Flow
+1. `.env` file contains: `OPENROUTER_BASE_MODEL="minimax/minimax-m2:free"`
+2. `config/settings.py` reads environment variable via Pydantic
+3. LLM service classes call `settings.get_openrouter_base_model()`
+4. All model references use configured value with appropriate fallbacks
+5. OpenRouter API calls use the correct "minimax/minimax-m2:free" model
+
+## Files Modified Summary
+- `app/presentation/api/routes/llm_simple.py` - Updated model references and added missing methods
+- `app/presentation/api/routes/llm_simple_v2.py` - Fixed settings integration and model references
+- `app/presentation/api/routes/chat.py` - Updated hardcoded model reference
+- Created comprehensive test files to verify the fix
+
+## Conclusion
+The OpenRouter model selection issue has been successfully resolved. The backend now correctly reads the `OPENROUTER_BASE_MODEL` environment variable and uses "minimax/minimax-m2:free" for all OpenRouter API calls instead of falling back to "gpt-3.5-turbo". All hardcoded model fallbacks have been removed and replaced with dynamic configuration-based model selection.

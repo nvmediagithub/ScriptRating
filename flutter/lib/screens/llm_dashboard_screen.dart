@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import '../providers/llm_dashboard_provider.dart';
 import '../widgets/llm_dashboard/simple_provider_switcher.dart';
 import '../widgets/llm_dashboard/provider_status_card.dart';
 import '../widgets/llm_dashboard/test_connection_widget.dart';
 import '../widgets/llm_dashboard/stats_display.dart';
+import '../widgets/llm_dashboard/test_chat_widget.dart';
+import '../services/llm_service.dart';
 
 class LlmDashboardScreen extends ConsumerStatefulWidget {
   const LlmDashboardScreen({super.key});
@@ -22,7 +25,7 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
       setState(() {
         _selectedTabIndex = _tabController.index;
@@ -54,7 +57,6 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
           tabs: const [
             Tab(icon: Icon(Icons.tune), text: 'Provider Setup'),
             Tab(icon: Icon(Icons.speed), text: 'Status & Testing'),
-            Tab(icon: Icon(Icons.analytics), text: 'Analytics'),
           ],
         ),
         actions: [
@@ -88,11 +90,7 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
   Widget _buildDashboardContent(dynamic state) {
     return TabBarView(
       controller: _tabController,
-      children: [
-        _buildConfigurationTab(state),
-        _buildStatusTestingTab(state),
-        _buildAnalyticsTab(state),
-      ],
+      children: [_buildConfigurationTab(state), _buildStatusTestingTab(state)],
     );
   }
 
@@ -126,23 +124,13 @@ class _LlmDashboardScreenState extends ConsumerState<LlmDashboardScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Provider Status
-          ProviderStatusCard(
-            statuses: state.statuses,
-            onTestConnection: (provider) => _testConnection(provider),
-            isLoading: state.isRefreshing,
-          ),
           const SizedBox(height: 16),
 
-          // Test Connection Widget
-          if (state.config['active_provider'] != null)
-            TestConnectionWidget(
-              provider: state.config['active_provider'],
-              modelName: state.config['active_model'],
-              onTestComplete: (prompt, response) => _handleTestComplete(prompt, response),
-              onTestConnection: (provider) => _testConnection(provider),
-              isLoading: state.isRefreshing,
-            ),
+          TestChatWidget(
+            llmService: LlmService(Dio()),
+            currentProvider: state.config['active_provider'],
+            currentModel: state.config['active_model'],
+          ),
         ],
       ),
     );

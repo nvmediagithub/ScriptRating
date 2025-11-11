@@ -47,10 +47,13 @@ class SimpleProviderConfig:
         # Local provider availability (mocked for now)
         self.local_available = True
 
-    @property
-    def is_openrouter_configured(self) -> bool:
-        """Check if OpenRouter is properly configured."""
-        return self.openrouter_available
+    def get_openrouter_api_key(self) -> str:
+        """Get OpenRouter API key."""
+        return self.openrouter_api_key
+    
+    def get_openrouter_base_model(self) -> str:
+        """Get OpenRouter base model."""
+        return self.openrouter_base_model
 
 # Global configuration instance
 config = SimpleProviderConfig()
@@ -63,12 +66,12 @@ SIMPLE_MODELS = {
         "context_window": 4096,
     },
     "gpt-3.5-turbo": {
-        "model_name": "gpt-3.5-turbo",
+        "model_name": config.get_openrouter_base_model() or "gpt-3.5-turbo",
         "provider": "openrouter",
         "context_window": 4096,
     },
     "minimax/minimax-m2:free": {
-        "model_name": "minimax/minimax-m2:free",
+        "model_name": config.get_openrouter_base_model() or "minimax/minimax-m2:free",
         "provider": "openrouter",
         "context_window": 4096,
     },
@@ -95,7 +98,7 @@ async def get_llm_models():
     """
     models_by_provider = {
         "local": ["llama2:7b"],
-        "openrouter": ["gpt-3.5-turbo", "minimax/minimax-m2:free"]
+        "openrouter": [config.get_openrouter_base_model() or "gpt-3.5-turbo", "minimax/minimax-m2:free"]
     }
     
     return {
@@ -198,7 +201,7 @@ async def switch_llm_mode(provider: str, model_name: str = None):
         # Validate model
         if model_name is None:
             # Use default model for provider
-            model_name = "llama2:7b" if provider == "local" else "gpt-3.5-turbo"
+            model_name = "llama2:7b" if provider == "local" else (config.get_openrouter_base_model() or "gpt-3.5-turbo")
 
         if model_name not in SIMPLE_MODELS:
             available_models = list(SIMPLE_MODELS.keys())
@@ -398,7 +401,7 @@ async def get_openrouter_models():
     Get OpenRouter models - simplified.
     """
     return {
-        "models": ["gpt-3.5-turbo", "minimax/minimax-m2:free"],
+        "models": [config.get_openrouter_base_model() or "gpt-3.5-turbo", "minimax/minimax-m2:free"],
         "total": 2,
         "cached": True
     }
