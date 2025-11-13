@@ -1,0 +1,67 @@
+{
+  "id": "e360a072-bf59-4a17-87ac-053dc15df9eb",
+  "title": "OpenRouter Integration Test",
+  "llm_provider": "OPENROUTER",
+  "llm_model": "minimax/minimax-m2:free",
+  "created_at": "2025-11-11T17:27:01.997141",
+  "updated_at": "2025-11-11T17:27:07.028638",
+  "is_active": true,
+  "settings": {
+    "temperature": 0.7,
+    "max_tokens": 2048
+  },
+  "messages": [
+    {
+      "id": "03428fb1-78d7-4dea-8106-0bacf0610e5a",
+      "role": "user",
+      "content": "Hello! Can you tell me a short fun fact about space?",
+      "created_at": "2025-11-11T17:27:02.002517",
+      "updated_at": "2025-11-11T17:27:02.002517",
+      "is_streaming": false,
+      "tokens_used": 0,
+      "response_time_ms": 0,
+      "error_message": null,
+      "metadata": {}
+    },
+    {
+      "id": "be544232-0a47-4c94-9d17-d5fd590b3068",
+      "role": "assistant",
+      "content": "Here's a fun space fact: **Saturn is so light that it would actually float in water!** \n\nSaturn has a density of only about 0.687 grams per cubic centimeter, which is less than water's density of 1 gram per cubic centimeter. Of course, finding a bathtub big enough to test this would be quite the challenge! \n\nThis makes Saturn unique among the planets in our solar system - it's the only one that would theoretically float. 🌟",
+      "created_at": "2025-11-11T17:27:02.002898",
+      "updated_at": "2025-11-11T17:27:06.762393",
+      "is_streaming": false,
+      "tokens_used": 293,
+      "response_time_ms": 4721,
+      "error_message": null,
+      "metadata": {
+        "is_processing": true
+      }
+    },
+    {
+      "id": "982014c1-0ab4-49b4-b9b8-a3bc341ee6b6",
+      "role": "user",
+      "content": "That's interesting! Can you tell me more?",
+      "created_at": "2025-11-11T17:27:07.027852",
+      "updated_at": "2025-11-11T17:27:07.027852",
+      "is_streaming": false,
+      "tokens_used": 0,
+      "response_time_ms": 0,
+      "error_message": null,
+      "metadata": {}
+    },
+    {
+      "id": "c185837e-04d8-408a-b825-e15b15aaa02f",
+      "role": "assistant",
+      "content": "That's great to hear! 😊\n\nLet's dig deeper into why the **Open AI Marketplace** concept is significant and what makes it so compelling:\n\n### 🛡️ 1. The Problem It Solves\nTraditional AI tools often:\n- Lack **transparency** about their creators or safety\n- Provide no **financial compensation** to developers who innovate\n- Force users into closed ecosystems where creators lose control\n- Leave users with generic results and no feedback loop\n\nThe marketplace reverses this by prioritizing **creators**, **safety**, and **collaboration**.\n\n### 💎 2. What Makes It Different\n- **For Creators**:  \n  ✅ Earn real money when users interact with your tools  \n  ✅ Keep ownership of your code/data  \n  ✅ Collaborate with others using transparent APIs  \n  ✅ Get direct feedback to iterate  \n\n- **For Users**:  \n  ✅ Access vetted, safe, and ethical tools  \n  ✅ Support small creators directly  \n  ✅ Personalized experiences with full transparency  \n  ✅ Mix-and-match tools like LEGO blocks for unique solutions  \n\n### 🔮 Real-World Examples\nImagine:\n1. A **therapy chatbot** rated by professionals for accuracy → instead of a biased commercial app\n2. A **code translator** trained by open-source experts → no hidden licensing traps\n3. A **dating profile generator** built by relationship coaches → ethical matchmaking tools\n4. A **financial advisor AI** governed by certified planners → transparent fee structures\n\n### 🤝 Why This Could Transform AI\n- **Democratizes innovation**: Small creators get a platform without big-tech gatekeepers  \n- **Encourages ethical AI**: Ratings/rewards push creators to build responsibly  \n- **Fosters trust**: Transparent systems combat the \"black box\" problem of current AI  \n- **Builds community**: Creators and users evolve tools *together*  \n\nIt's like a **public square for AI development**—instead of renting tools from a walled garden, we're cultivating a shared meadow.  \n\nWould you like me to explore any specific aspect further? I'm excited to talk about this! 🌱",
+      "created_at": "2025-11-11T17:27:07.028638",
+      "updated_at": "2025-11-11T17:27:20.311667",
+      "is_streaming": false,
+      "tokens_used": 823,
+      "response_time_ms": 13270,
+      "error_message": null,
+      "metadata": {
+        "is_processing": true
+      }
+    }
+  ]
+}

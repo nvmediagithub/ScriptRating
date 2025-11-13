@@ -41,6 +41,13 @@
       "created_at": "2025-11-11T10:58:17.191210",
       "updated_at": "2025-11-11T10:58:17.191210",
       "is_active": true
+    },
+    {
+      "id": "e360a072-bf59-4a17-87ac-053dc15df9eb",
+      "title": "OpenRouter Integration Test",
+      "created_at": "2025-11-11T17:27:01.997141",
+      "updated_at": "2025-11-11T17:27:01.997141",
+      "is_active": true
     }
   ]
 }

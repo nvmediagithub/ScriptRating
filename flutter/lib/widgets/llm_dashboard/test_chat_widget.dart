@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/llm_service.dart';
+import '../../models/chat_message.dart';
 
 /// Simple test chat message model for LLM dashboard testing
 class TestChatMessage {
@@ -9,7 +10,7 @@ class TestChatMessage {
   final bool isUser;
   final DateTime timestamp;
   final String? error;
-  final int? responseTimeMs;
+  final double? responseTimeMs;
 
   TestChatMessage({
     required this.id,
@@ -29,7 +30,7 @@ class TestChatMessage {
     );
   }
 
-  factory TestChatMessage.assistant(String content, {int? responseTimeMs}) {
+  factory TestChatMessage.assistant(String content, {double? responseTimeMs}) {
     return TestChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       content: content,
@@ -107,20 +108,24 @@ class _TestChatWidgetState extends State<TestChatWidget> {
     _scrollToBottom();
 
     try {
-      // Send to backend for LLM processing
-      final response = await widget.llmService.testLLM(
-        content.trim(),
-        modelName: widget.currentModel,
-      );
+      // Use the real chat API with direct LLM processing endpoint
+      final chatSessionId = await _ensureTestChatSession();
 
-      final assistantMessage = TestChatMessage.assistant(
-        response['response'] as String? ?? 'No response received',
-        responseTimeMs: response['response_time_ms'] as int?,
+      // Send message to backend - this will trigger async LLM processing
+      final response = await widget.llmService.sendChatMessage(chatSessionId, content.trim());
+
+      // For now, add a placeholder for the LLM response while it processes
+      final placeholderMessage = TestChatMessage.assistant(
+        'Processing with ${widget.currentProvider.toUpperCase()}...',
+        responseTimeMs: 0,
       );
 
       setState(() {
-        _messages.add(assistantMessage);
+        _messages.add(placeholderMessage);
       });
+
+      // Start polling for the actual LLM response
+      _pollForLLMResponse(chatSessionId, _messages.length - 1);
     } catch (e) {
       final errorMessage = TestChatMessage.error('Error: $e');
       setState(() {
@@ -138,6 +143,85 @@ class _TestChatWidgetState extends State<TestChatWidget> {
       });
       _scrollToBottom();
     }
+  }
+
+  Future<String> _ensureTestChatSession() async {
+    // Try to get existing test chat session
+    final sessions = await widget.llmService.getChatSessions();
+
+    // Look for a test session or create one
+    String? testSessionId;
+    for (final session in sessions) {
+      if (session.title.contains('LLM Test') || session.title.contains('Test Chat')) {
+        testSessionId = session.id;
+        break;
+      }
+    }
+
+    if (testSessionId != null) {
+      return testSessionId;
+    }
+
+    // Create a new test chat session
+    final newSession = await widget.llmService.createChatSession(
+      title: 'LLM Test Chat - ${widget.currentProvider.toUpperCase()}',
+      provider: widget.currentProvider,
+      model: widget.currentModel,
+      settings: {'is_test': true},
+    );
+
+    return newSession.id;
+  }
+
+  void _pollForLLMResponse(String sessionId, int messageIndex) async {
+    const maxAttempts = 60; // Poll for up to 60 seconds
+    const delayDuration = Duration(milliseconds: 2000); // Poll every 2 seconds
+
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
+      await Future.delayed(delayDuration);
+
+      try {
+        final messages = await widget.llmService.getChatMessages(sessionId, page: 1, pageSize: 10);
+
+        // Find the latest assistant message
+        for (final message in messages.reversed) {
+          // Ensure we're working with ChatMessage objects, not raw data
+          if (message.role == MessageRole.assistant &&
+              message.content.isNotEmpty &&
+              !message.content.contains('Processing')) {
+            // Update the placeholder with the actual response
+            final assistantMessage = TestChatMessage.assistant(
+              message.content,
+              responseTimeMs: message.responseTimeMs?.toDouble(),
+            );
+
+            setState(() {
+              if (messageIndex < _messages.length) {
+                _messages[messageIndex] = assistantMessage;
+              }
+            });
+
+            _scrollToBottom();
+            return; // Success
+          }
+        }
+      } catch (e) {
+        // Continue polling if there's an error
+        debugPrint('Error polling for LLM response: $e');
+        continue;
+      }
+    }
+
+    // Timeout - update the message to show timeout
+    final timeoutMessage = TestChatMessage.error(
+      'Response timeout - the LLM may still be processing',
+    );
+    setState(() {
+      if (messageIndex < _messages.length) {
+        _messages[messageIndex] = timeoutMessage;
+      }
+    });
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -170,6 +254,7 @@ class _TestChatWidgetState extends State<TestChatWidget> {
   Widget build(BuildContext context) {
     return Card(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           _buildHeader(),
           Flexible(fit: FlexFit.loose, child: _buildMessageList()),
@@ -214,14 +299,17 @@ class _TestChatWidgetState extends State<TestChatWidget> {
   }
 
   Widget _buildMessageList() {
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(16),
-      itemCount: _messages.length,
-      itemBuilder: (context, index) {
-        final message = _messages[index];
-        return _buildMessageBubble(message, index);
-      },
+    return Container(
+      height: 400, // Fixed height to prevent unbounded constraints
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(16),
+        itemCount: _messages.length,
+        itemBuilder: (context, index) {
+          final message = _messages[index];
+          return _buildMessageBubble(message, index);
+        },
+      ),
     );
   }
 

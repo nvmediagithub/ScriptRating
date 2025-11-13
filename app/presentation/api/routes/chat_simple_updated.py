@@ -39,13 +39,21 @@ def get_openrouter_client() -> OpenRouterClient:
     """Get or create OpenRouter client instance."""
     global _openrouter_client
     if _openrouter_client is None:
+        # Use effective API key from settings (checks environment variables)
+        api_key = settings.get_openrouter_api_key()
+        
+        if not api_key:
+            logger.warning("OpenRouter API key not found in environment or settings")
+        
         _openrouter_client = OpenRouterClient(
-            api_key=settings.openrouter_api_key,
+            api_key=api_key,
             base_url=settings.openrouter_base_url,
             referer=settings.openrouter_referer,
             app_name=settings.openrouter_app_name,
             timeout=settings.openrouter_timeout
         )
+        
+        logger.info(f"OpenRouter client initialized - Base URL: {settings.openrouter_base_url}, Has API Key: {bool(api_key)}")
     return _openrouter_client
 
 # Simple mapping functions
@@ -104,18 +112,23 @@ async def process_llm_chat_message(
     # Normalize provider name
     provider = provider.upper() if provider else "LOCAL"
     
-    if provider == "OPENROUTER":
-        return await _process_openrouter_request(prompt, model, start_time)
-    else:  # LOCAL or other providers
-        return await _process_local_request(prompt, start_time)
+    # Use OpenRouter for all requests - get model from settings if not provided
+    if not model or model == "llama2:7b":
+        model = settings.get_openrouter_base_model() or "minimax/minimax-m2:free"
+    
+    return await _process_openrouter_request(prompt, model, start_time)
 
 async def _process_openrouter_request(prompt: str, model: str, start_time: datetime) -> ProcessLLMResponse:
     """Process request through OpenRouter API."""
     try:
+        # Get OpenRouter client with settings
         client = get_openrouter_client()
         
         if not client.has_api_key:
-            raise OpenRouterConfigurationError("OpenRouter API key is not configured")
+            logger.error("OpenRouter API key is not configured")
+            raise OpenRouterConfigurationError("OpenRouter API key is not configured. Please set OPENROUTER_API_KEY in .env file.")
+        
+        logger.info(f"Processing chat message with OpenRouter - Model: {model}")
         
         # Use OpenRouter API
         result = await client.chat_completion(
@@ -126,6 +139,8 @@ async def _process_openrouter_request(prompt: str, model: str, start_time: datet
         )
         
         response_time_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
+        
+        logger.info(f"OpenRouter response received - Tokens: {result.get('tokens_used')}, Time: {response_time_ms:.2f}ms")
         
         return ProcessLLMResponse(
             message_id="openrouter_message_id",
@@ -191,26 +206,6 @@ async def _process_openrouter_request(prompt: str, model: str, start_time: datet
             error_message=f"Unexpected error: {str(e)}"
         )
 
-async def _process_local_request(prompt: str, start_time: datetime) -> ProcessLLMResponse:
-    """Process local request with enhanced response."""
-    # Simulate local processing time
-    await asyncio.sleep(0.5)
-    
-    response = f"I understand your question: '{prompt}'. As a local AI assistant, I'm here to help you with that."
-    
-    response_time_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
-    tokens_used = len(response.split()) * 1.3
-    
-    return ProcessLLMResponse(
-        message_id="local_message_id",
-        session_id="local_session_id",
-        response=response,
-        tokens_used=int(tokens_used),
-        response_time_ms=response_time_ms,
-        provider="LOCAL",
-        model="llama2:7b",
-        success=True
-    )
 
 
 # Chat Session Management Endpoints

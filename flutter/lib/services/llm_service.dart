@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../models/chat_message.dart';
 import '../models/chat_session.dart';
-import '../models/llm_models.dart';
 import '../models/llm_provider.dart';
 
 class LlmService {
@@ -303,8 +302,22 @@ class LlmService {
   Future<List<ChatSession>> getChatSessions() async {
     try {
       final response = await _dio.get('/chats');
-      final list = response.data as List<dynamic>;
-      return list.map((item) => ChatSession.fromJson(item as Map<String, dynamic>)).toList();
+
+      // Handle different response formats (List or Map with 'sessions' key)
+      final responseData = response.data;
+      List<dynamic> sessionList;
+
+      if (responseData is List) {
+        sessionList = responseData;
+      } else if (responseData is Map<String, dynamic> && responseData.containsKey('sessions')) {
+        sessionList = responseData['sessions'] as List<dynamic>;
+      } else if (responseData is Map<String, dynamic> && responseData.containsKey('data')) {
+        sessionList = responseData['data'] as List<dynamic>;
+      } else {
+        throw Exception('Unexpected response format from backend: ${responseData.runtimeType}');
+      }
+
+      return sessionList.map((item) => ChatSession.fromJson(item as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
       // Fallback to mock for development if backend not available
       debugPrint('Failed to get chat sessions from backend, using mock: $e');
@@ -339,8 +352,22 @@ class LlmService {
         '/chats/$sessionId/messages',
         queryParameters: {'page': page, 'page_size': pageSize},
       );
-      final list = response.data as List<dynamic>;
-      return list.map((item) => ChatMessage.fromJson(item as Map<String, dynamic>)).toList();
+
+      // Handle different response formats (List or Map with 'messages' key)
+      final responseData = response.data;
+      List<dynamic> messageList;
+
+      if (responseData is List) {
+        messageList = responseData;
+      } else if (responseData is Map<String, dynamic> && responseData.containsKey('messages')) {
+        messageList = responseData['messages'] as List<dynamic>;
+      } else if (responseData is Map<String, dynamic> && responseData.containsKey('data')) {
+        messageList = responseData['data'] as List<dynamic>;
+      } else {
+        throw Exception('Unexpected response format from backend: ${responseData.runtimeType}');
+      }
+
+      return messageList.map((item) => ChatMessage.fromJson(item as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
       // Fallback to mock for development if backend not available
       debugPrint('Failed to get chat messages from backend, using mock: $e');
@@ -351,7 +378,25 @@ class LlmService {
   Future<ChatMessage> sendChatMessage(String sessionId, String content) async {
     try {
       final response = await _dio.post('/chats/$sessionId/messages', data: {'content': content});
-      return ChatMessage.fromJson(response.data);
+
+      // Handle different response formats
+      final responseData = response.data;
+      Map<String, dynamic> messageData;
+
+      if (responseData is Map<String, dynamic>) {
+        // If response is already a Map, check if it's the message or wrapped in an object
+        if (responseData.containsKey('id') && responseData.containsKey('content')) {
+          messageData = responseData;
+        } else if (responseData.containsKey('message')) {
+          messageData = responseData['message'] as Map<String, dynamic>;
+        } else {
+          throw Exception('Unexpected response format: ${responseData.keys.toList()}');
+        }
+      } else {
+        throw Exception('Unexpected response data type: ${responseData.runtimeType}');
+      }
+
+      return ChatMessage.fromJson(messageData);
     } on DioException catch (e) {
       throw Exception('Failed to send chat message: $e');
     }

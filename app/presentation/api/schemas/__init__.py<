@@ -1,3 +1,0 @@
-"""Schemas package for API request/response models."""
-
-# Temporarily avoid circular import issues
