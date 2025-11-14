@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>ScriptRating — презентация проекта</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --bg-alt: #ffffff;
+      --card-bg: #ffffff;
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.14);
+      --accent-strong: #1d4ed8;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border-subtle: #e5e7eb;
+      --shadow-soft: 0 22px 60px rgba(15, 23, 42, 0.16);
+      --radius-lg: 18px;
+      --radius-pill: 999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Roboto", "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #e5edff 0, #f9fafb 45%, #f3f4f6 100%);
+      color: var(--text-main);
+      overflow-x: hidden;
+    }
+
+    .app {
+      display: flex;
+      min-height: 100vh;
+      color: var(--text-main);
+    }
+
+    .sidebar {
+      width: 260px;
+      background: rgba(15, 23, 42, 0.9);
+      border-right: 1px solid rgba(148, 163, 184, 0.15);
+      backdrop-filter: blur(22px);
+      padding: 22px 20px;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      max-height: 100vh;
+    }
+
+    .logo-block {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: radial-gradient(circle at 20% 20%, #38bdf8, #1d4ed8 60%, #020617 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 30px rgba(56, 189, 248, 0.5);
+      font-size: 16px;
+      font-weight: 700;
+      color: #e0f2fe;
+    }
+
+    .logo-text-title {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .logo-text-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .sidebar-section-title {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 12px 0 8px;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 14px;
+      padding-right: 4px;
+      overflow-y: auto;
+    }
+
+    .nav-item {
+      font-size: 13px;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: all 0.18s ease-out;
+      border: 1px solid transparent;
+    }
+
+    .nav-link span.index {
+      font-size: 10px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(30, 64, 175, 0.5);
+      color: #e5f2ff;
+    }
+
+    .nav-link:hover {
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    .nav-link.active {
+      background: linear-gradient(120deg, rgba(56, 189, 248, 0.3), rgba(59, 130, 246, 0.15));
+      color: #e5f2ff;
+      border-color: rgba(56, 189, 248, 0.7);
+    }
+
+    .nav-link.active span.index {
+      background: #e0f2fe;
+      color: #0f172a;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      font-size: 11px;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      padding-top: 10px;
+    }
+
+    .sidebar-footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .main {
+      flex: 1;
+      padding: 0;
+      overflow-y: auto;
+    }
+
+    .slides {
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .slide {
+      background: radial-gradient(circle at top left, #ffffff, #e5edff 70%);
+      border-radius: var(--radius-lg);
+      padding: 22px 24px 22px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+    }
+
+    .slide::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 55%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .slide-inner {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2.4fr);
+      gap: 20px;
+      align-items: flex-start;
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .slide-fullwidth .slide-inner {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .slide-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .slide-kicker {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent-strong);
+    }
+
+    .slide-title {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #0f172a;
+      margin: 0 0 4px;
+    }
+
+    .slide-index-pill {
+      font-size: 11px;
+      padding: 5px 10px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: radial-gradient(circle at top left, #ffffff, #e5edff);
+      color: var(--accent-strong);
+    }
+
+    .slide-body {
+      font-size: 14px;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .bullets {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bullets li {
+      position: relative;
+      padding-left: 16px;
+      line-height: 1.4;
+    }
+
+    .bullets li::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 0.55em;
+      width: 5px;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+    }
+
+    .muted {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .links-block {
+      display: none;
+    }
+
+    .links-block span.label {
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 10px;
+      display: inline-block;
+      margin-bottom: 3px;
+      color: rgba(148, 163, 184, 0.9);
+    }
+
+    .link-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      margin: 2px 3px 0 0;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      text-decoration: none;
+      color: var(--text-muted);
+      transition: all 0.18s ease-out;
+    }
+
+    .link-chip::before {
+      content: "↗";
+      font-size: 10px;
+      opacity: 0.8;
+    }
+
+    .link-chip:hover {
+      color: #e5f2ff;
+      border-color: rgba(56, 189, 248, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .image-placeholder {
+      border-radius: 18px;
+      border: 1px dashed rgba(148, 163, 184, 0.8);
+      background: radial-gradient(circle at top left, #f9fafb, #e5edff);
+      min-height: 170px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 14px;
+    }
+
+    .image-placeholder-label {
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(148, 163, 184, 0.9);
+    }
+
+    .image-placeholder-title {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .image-placeholder-desc {
+      font-size: 12px;
+      max-width: 260px;
+    }
+
+    .image-placeholder img {
+      width: 100%;
+      max-width: 980px;
+      border-radius: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.8);
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+      background-color: #ffffff;
+      margin-top: 16px;
+    }
+
+    .image-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .chip {
+      font-size: 11px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-muted);
+    }
+
+    .chip-accent {
+      border-color: rgba(56, 189, 248, 0.7);
+      color: #e0f2fe;
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .pill {
+      font-size: 11px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--text-muted);
+    }
+
+    .diagram {
+      margin-top: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    .diagram-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .diagram-node {
+      padding: 8px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.9);
+      background: #ffffff;
+      color: #111827;
+      min-width: 120px;
+      text-align: center;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+    }
+
+    .diagram-node-muted {
+      background: #f3f4f6;
+      border-style: dashed;
+    }
+
+    .diagram-arrow {
+      font-size: 18px;
+      color: var(--accent-strong);
+    }
+
+    @media (max-width: 960px) {
+      .app {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        position: static;
+        max-height: none;
+        border-right: none;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .sidebar-section-title {
+        display: none;
+      }
+
+      .nav-list {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        margin: 0;
+      }
+
+      .nav-link {
+        white-space: nowrap;
+      }
+
+      .sidebar-footer {
+        display: none;
+      }
+
+      .main {
+        padding: 18px 16px 26px;
+      }
+    }
+
+    @media (max-width: 800px) {
+      .slide-inner {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media print {
+      body {
+        margin: 0;
+      }
+
+      .slide {
+        page-break-after: always;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <main class="main">
+      <div class="slides">
+
+        <section class="slide slide-fullwidth" id="slide-1">
+          <div class="slide-inner">
+            <div>
+              <header class="slide-header">
+                <div>
+                  <div class="slide-kicker">ScriptRating</div>
+                  <h2 class="slide-title">Автоматический рейтинг киносценариев по ФЗ‑436</h2>
+                </div>
+                <div class="slide-index-pill">Слайд 1 / 13</div>
+              </header>
+              <div class="slide-body">
+                <ul class="bullets">
+                  <li>Автономная офлайн‑система для анализа сценариев на соответствие Федеральному закону №436‑ФЗ.</li>
+                  <li>Поддержка PDF/DOCX, автоматическое разбиение на сцены и классификация по 5 категориям риска.</li>
+                  <li>Расчёт возрастного рейтинга (0+/6+/12+/16+/18+) и генерация отчётов с юридическими обоснованиями.
+                  </li>
+                  <li>Фокус на приватности, воспроизводимости и прозрачности решений.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide slide-fullwidth" id="slide-2">
+          <div class="slide-inner">
+            <div>
+              <header class="slide-header">
+                <div>
+                  <div class="slide-kicker">Контекст</div>
+                  <h2 class="slide-title">Проблема и регуляторная среда</h2>
+                </div>
+                <div class="slide-index-pill">Слайд 2 / 13</div>
+              </header>
+              <div class="slide-body">
+                <ul class="bullets">
+                  <li>Ужесточение требований к детскому и семейному контенту в рамках ФЗ‑436.</li>
+                  <li>Ручная экспертиза сценариев: долго, субъективно и дорого для студий и площадок.</li>
+                  <li>Разрозненные инструменты: анализ текста отдельно от юридической проверки.</li>
+                  <li>Нет стандартизированного процесса оценки и документирования решений.</li>
+                </ul>
+                <p class="muted">
+                  ScriptRating закрывает этот разрыв, соединяя текстовый анализ, юристов и продюсеров в едином контуре.
+                </p>
+                <div class="links-block">
+                  <span class="label">Ссылки</span><br />
+                  <a class="link-chip"
+                    href="../../storage/documents/criteria/ba9a6042-bb46-491f-8299-09b6995dccd8/Федеральный_закон_от_29_12_2010_г_№_436_ФЗ.pdf">
+                    Текст ФЗ‑436
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="slide" id="slide-3">
+          <div class="slide-inner">
+            <div>
+              <header class="slide-header">
+                <div>
+                  <div class="slide-kicker">Интерфейс</div>
+                  <h2 class="slide-title">Экран загрузки сценария</h2>
+                </div>
+                <div class="slide-index-pill">Слайд 3 / 13</div>
+              </header>
+              <div class="slide-body">
+                <ul class="bullets">
+                  <li>Загрузка сценариев в форматах PDF и DOCX с сохранением структуры.</li>
+                  <li>Выбор целевого возрастного рейтинга и типа анализа.</li>
+                  <li>Отображение статуса обработки и базовых параметров сценария.</li>
+                  <li>Интуитивный интерфейс для редакторов, продюсеров и юристов.</li>
+                </ul>
+                <div class="links-block">
+                  <span class="label">Ссылки</span><br />
+                  <a class="link-chip" href="../modules/flutter_ui.md">modules/flutter_ui.md</a>
+                  <a class="link-chip" href="../../flutter/lib/screens/analysis_screen.dart">analysis_screen.dart</a>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="image-placeholder">
+                <div class="image-placeholder-label">Скриншот интерфейса</div>
+                <div class="image-placeholder-title">Экран загрузки сценария</div>
+                <div class="image-placeholder-desc">
+                  Пример UI с выбором файла, настройками и запуском анализа.
+                </div>
+                <img src="screens/upload.png" alt="Экран загрузки сценария ScriptRating" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" id="slide-4">
+          <div class="slide-inner">
+            <div>
+              <header class="slide-header">
+                <div>
+                  <div class="slide-kicker">Результаты</div>
+                  <h2 class="slide-title">Главный экран анализа сценария</h2>
+                </div>
+                <div class="slide-index-pill">Слайд 4 / 13</div>
+              </header>
+              <div class="slide-body">
+                <ul class="bullets">
+                  <li>Визуальный таймлайн сцен с цветовой кодировкой нарушений.</li>
+                  <li>Быстрый переход к любой сцене и её тексту.</li>
+                  <li>Отображение итогового возрастного рейтинга и краткого резюме.</li>
+                  <li>Интеграция с детализацией по категориям риска и тяжести.</li>
+                </ul>
+                <div class="links-block">
+                  <span class="label">Ссылки</span><br />
+                  <a class="link-chip" href="../../flutter/lib/screens/results_screen.dart">results_screen.dart</a>
+                  <a class="link-chip"
+                    href="../../flutter/lib/widgets/analysis_result_widget.dart">analysis_result_widget.dart</a>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="image-placeholder">
+                <div class="image-placeholder-label">Скриншот интерфейса</div>
+                <div class="image-placeholder-title">Экран анализа сценария</div>
+                <div class="image-placeholder-desc">
+                  Основной экран с общей картиной соответствия ФЗ‑436.
+                </div>
+                <img src="screens/main.png" alt="Главный экран анализа сценария ScriptRating" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" id="slide-5">
+          <div class="slide-inner">
+            <div>
+              <header class="slide-header">
+                <div>
+                  <div class="slide-kicker">Результаты</div>
+                  <h2 class="slide-title">Результаты анализа — вариант 1</h2>
+                </div>
+                <div class="slide-index-pill">Слайд 5 / 13</div>
+              </header>
+              <div class="slide-body">
+                <ul class="bullets">
+                  <li>Первый вариант представления результатов анализа по сценарию.</li>
+                  <li>Сводка нарушений и ключевых показателей по ФЗ‑436.</li>
+                  <li>Подходит для общего обзора перед детальной проработкой.</li>
+                </ul>
+                <div class="links-block">
+                  <span class="label">Ссылки</span><br />
+                  <a class="link-chip"
+                    href="../../flutter/lib/widgets/category_summary_widget.dart">category_summary_widget.dart</a>
+                  <a class="link-chip"
+                    href="../../flutter/lib/widgets/scene_detail_widget.dart">scene_detail_widget.dart</a>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="image-placeholder">
+                <div class="image-placeholder-label">Скриншот интерфейса</div>
+                <div class="image-placeholder-title">Результаты анализа — вариант 1</div>
+                <div class="image-placeholder-desc">
+                  Первый вариант экрана с результатами и распределением категорий нарушений.
+                </div>
+                <img src="screens/result0.png" alt="Вариант представления результатов ScriptRating — 0" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" id="slide-6">
+          <div class="slide-inner">
+            <div>
+              <header class="slide-header">
+                <div>
+                  <div class="slide-kicker">Результаты</div>
+                  <h2 class="slide-title">Результаты анализа — вариант 2</h2>
+                </div>
+                <div class="slide-index-pill">Слайд 6 / 13</div>
+              </header>
+              <div class="slide-body">
+                <ul class="bullets">
+                  <li>Второй вариант отображения результатов для детального разбора.</li>
+                  <li>Удобен для поиска конкретных проблемных сцен и категорий.</li>
+                  <li>Фокус на детализации и навигации по результатам.</li>
+                </ul>
+              </div>
+            </div>
+            <div>
+              <div class="image-placeholder">
+                <div class="image-placeholder-label">Скриншот интерфейса</div>
+                <div class="image-placeholder-title">Результаты анализа — вариант 2</div>
+                <div class="image-placeholder-desc">
+                  Второй вариант экрана с результатами и фильтрами по категориям.
+                </div>
+                <img src="screens/result1.png" alt="Вариант представления результатов ScriptRating — 1" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" id="slide-7">
+          <div class="slide-inner">
+            <div>
+              <header class="slide-header">
+                <div>
+                  <div class="slide-kicker">Результаты</div>
+                  <h2 class="slide-title">Результаты анализа — вариант 3</h2>
+                </div>
+                <div class="slide-index-pill">Слайд 7 / 13</div>
+              </header>
+              <div class="slide-body">
+                <ul class="bullets">
+                  <li>Третий вариант представления результатов анализа.</li>
+                  <li>Подходит для быстрой визуальной оценки распределения нарушений.</li>
+                  <li>Дополняет остальные виды представления результатов.</li>
+                </ul>
+              </div>
+            </div>
+            <div>
+              <div class="image-placeholder">
+                <div class="image-placeholder-label">Скриншот интерфейса</div>
+                <div class="image-placeholder-title">Результаты анализа — вариант 3</div>
+                <div class="image-placeholder-desc">
+                  Третий вариант экрана с визуализацией нарушений по сценарию.
+                </div>
+                <img src="screens/result2.png" alt="Вариант представления результатов ScriptRating — 2" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" id="slide-8">
+          <div class="slide-inner">
+            <div>
+              <header class="slide-header">
+                <div>
+                  <div class="slide-kicker">Отчёты</div>
+                  <h2 class="slide-title">Экспорт результатов и отчётность</h2>
+                </div>
+                <div class="slide-index-pill">Слайд 8 / 13</div>
+              </header>
+              <div class="slide-body">
+                <ul class="bullets">
+                  <li>Экспорт результатов в форматы PDF, DOCX и JSON.</li>
+                  <li>Отчёты в стиле «Parents Guide» с детализацией по сценам.</li>
+                  <li>Ссылки на статьи ФЗ‑436 и нормативные документы внутри отчёта.</li>
+                  <li>Готовность материалов для регуляторов, юристов и внешних партнёров.</li>
+                </ul>
+                <div class="links-block">
+                  <span class="label">Ссылки</span><br />
+                  <a class="link-chip" href="../modules/report_generator.md">modules/report_generator.md</a>
+                  <a class="link-chip" href="../reports/FINAL_E2E_TEST_REPORT.md">FINAL_E2E_TEST_REPORT.md</a>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="image-placeholder">
+                <div class="image-placeholder-label">Скриншот интерфейса</div>
+                <div class="image-placeholder-title">Экран экспорта отчёта</div>
+                <div class="image-placeholder-desc">
+                  Настройка формата и состава итогового отчёта по сценарию.
+                </div>
+                <img src="screens/export.png" alt="Экран экспорта отчёта ScriptRating" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" id="slide-9">
+          <div class="slide-inner">
+            <div>
+              <header class="slide-header">
+                <div>
+                  <div class="slide-kicker">LLM интеграции</div>
+                  <h2 class="slide-title">Панель управления LLM‑провайдерами</h2>
+                </div>
+                <div class="slide-index-pill">Слайд 9 / 13</div>
+              </header>
+              <div class="slide-body">
+                <ul class="bullets">
+                  <li>Централизованная панель настройки провайдеров LLM и моделей.</li>
+                  <li>Статусы подключения, лимиты и диагностические сообщения.</li>
+                  <li>Быстрая проверка доступности моделей для анализа сценариев.</li>
+                  <li>Гибкое конфигурирование для локальных и облачных моделей.</li>
+                </ul>
+                <div class="links-block">
+                  <span class="label">Ссылки</span><br />
+                  <a class="link-chip"
+                    href="../../flutter/lib/screens/llm_dashboard_screen.dart">llm_dashboard_screen.dart</a>
+                  <a class="link-chip"
+                    href="../../flutter/lib/models/llm_dashboard_state.dart">llm_dashboard_state.dart</a>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="image-placeholder">
+                <div class="image-placeholder-label">Скриншот интерфейса</div>
+                <div class="image-placeholder-title">LLM Dashboard</div>
+                <div class="image-placeholder-desc">
+                  Экран настройки и мониторинга провайдеров и моделей LLM.
+                </div>
+                <img src="screens/llm_dashboard.png" alt="Экран LLM Dashboard ScriptRating" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" id="slide-10">
+          <div class="slide-inner">
+            <div>
+              <header class="slide-header">
+                <div>
+                  <div class="slide-kicker">Real‑time</div>
+                  <h2 class="slide-title">LLM‑чат для проверки идей</h2>
+                </div>
+                <div class="slide-index-pill">Слайд 10 / 13</div>
+              </header>
+              <div class="slide-body">
+                <ul class="bullets">
+                  <li>Интерактивный чат с LLM для обсуждения конкретных сцен и правок.</li>
+                  <li>Сценаристы и редакторы могут уточнять интерпретацию сложных фрагментов.</li>
+                  <li>Тестирование качества подключённых моделей прямо из интерфейса.</li>
+                  <li>Подготовка к будущим возможностям real‑time сопровождения написания сценария.</li>
+                </ul>
+                <div class="links-block">
+                  <span class="label">Ссылки</span><br />
+                  <a class="link-chip"
+                    href="../real_time_chat_implementation_plan.md">real_time_chat_implementation_plan.md</a>
+                  <a class="link-chip"
+                    href="../../flutter/lib/widgets/llm_dashboard/test_chat_widget.dart">test_chat_widget.dart</a>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="image-placeholder">
+                <div class="image-placeholder-label">Скриншот интерфейса</div>
+                <div class="image-placeholder-title">LLM‑чат ScriptRating</div>
+                <div class="image-placeholder-desc">
+                  Экран диалога с моделью для проверки контента и гипотез.
+                </div>
+                <img src="screens/llm_chat.png" alt="Экран LLM‑чата ScriptRating" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" id="slide-11">
+          <div class="slide-inner">
+            <div>
+              <header class="slide-header">
+                <div>
+                  <div class="slide-kicker">Архитектура</div>
+                  <h2 class="slide-title">Чистая архитектура ScriptRating</h2>
+                </div>
+                <div class="slide-index-pill">Слайд 11 / 13</div>
+              </header>
+              <div class="slide-body">
+                <ul class="bullets">
+                  <li>Слои Clean Architecture: Presentation → Interface Adapters → Application → Domain →
+                    Infrastructure.</li>
+                  <li>Flutter UI взаимодействует с FastAPI backend через REST/WebSocket.</li>
+                  <li>Ядро состоит из Parser, Segmenter, Rule Filters, LLM Classifier, Rating Engine,
+                    Report/History/Feedback/RAG модулей.</li>
+                  <li>Хранение: база истории анализов, отчёты, векторное хранилище, модели.</li>
+                </ul>
+              </div>
+            </div>
+            <div>
+              <div class="image-placeholder">
+                <div class="image-placeholder-label">Схема</div>
+                <div class="image-placeholder-title">Слои архитектуры</div>
+                <div class="image-placeholder-desc">
+                  Упрощённая схема слоёв и ключевых компонентов системы.
+                </div>
+                <div class="diagram">
+                  <div class="diagram-row">
+                    <div class="diagram-node">Flutter UI<br />Screens & Widgets</div>
+                  </div>
+                  <div class="diagram-row">
+                    <span class="diagram-arrow">↓</span>
+                    <div class="diagram-node">FastAPI<br />Controllers & Routes</div>
+                  </div>
+                  <div class="diagram-row">
+                    <span class="diagram-arrow">↓</span>
+                    <div class="diagram-node">Use Cases<br />Analysis Manager, Report Builder</div>
+                  </div>
+                  <div class="diagram-row">
+                    <span class="diagram-arrow">↓</span>
+                    <div class="diagram-node">Domain<br />Rating Engine, Entities</div>
+                  </div>
+                  <div class="diagram-row">
+                    <span class="diagram-arrow">↓</span>
+                    <div class="diagram-node diagram-node-muted">Infrastructure<br />Parsers, LLM, Vector Store, DB
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" id="slide-12">
+          <div class="slide-inner">
+            <div>
+              <header class="slide-header">
+                <div>
+                  <div class="slide-kicker">User Flow</div>
+                  <h2 class="slide-title">Пользовательский поток: от загрузки до отчёта</h2>
+                </div>
+                <div class="slide-index-pill">Слайд 12 / 13</div>
+              </header>
+              <div class="slide-body">
+                <ul class="bullets">
+                  <li>Пользователь загружает сценарий и (опционально) нормативные документы.</li>
+                  <li>Backend выполняет парсинг, сегментацию и анализ с RAG‑ссылками.</li>
+                  <li>UI показывает прогресс, по мере готовности — блоки и сцены с рейтингами.</li>
+                  <li>После ревью формируется финальный отчёт и сохраняется история анализа.</li>
+                </ul>
+              </div>
+            </div>
+            <div>
+              <div class="image-placeholder">
+                <div class="image-placeholder-label">Схема</div>
+                <div class="image-placeholder-title">User Flow</div>
+                <div class="image-placeholder-desc">
+                  Поток действий пользователя и обратной связи.
+                </div>
+                <div class="diagram">
+                  <div class="diagram-row">
+                    <div class="diagram-node">1. Upload<br />Script & Criteria</div>
+                    <span class="diagram-arrow">→</span>
+                    <div class="diagram-node">2. Analysis<br />Parser, Segmenter, LLM</div>
+                    <span class="diagram-arrow">→</span>
+                    <div class="diagram-node">3. Review<br />Blocks & Scenes</div>
+                    <span class="diagram-arrow">→</span>
+                    <div class="diagram-node">4. Report<br />Export & Sharing</div>
+                    <span class="diagram-arrow">→</span>
+                    <div class="diagram-node diagram-node-muted">5. Feedback<br />Corrections → RAG</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" id="slide-13">
+          <div class="slide-inner">
+            <div>
+              <header class="slide-header">
+                <div>
+                  <div class="slide-kicker">RAG Pipeline</div>
+                  <h2 class="slide-title">Схема RAG‑конвейера обоснований</h2>
+                </div>
+                <div class="slide-index-pill">Слайд 13 / 13</div>
+              </header>
+              <div class="slide-body">
+                <ul class="bullets">
+                  <li>Корпус: ФЗ‑436, методички, примеры сцен и пользовательские корректировки.</li>
+                  <li>Этапы: нормализация → эмбеддинги → векторный индекс (FAISS/Qdrant).</li>
+                  <li>Запросы: текст сцены + категория → поиск top‑K выдержек → формирование prompt.</li>
+                  <li>LLM возвращает оценку и объяснение с цитатами; коррекции пользователя обновляют корпус.</li>
+                </ul>
+              </div>
+            </div>
+            <div>
+              <div class="image-placeholder">
+                <div class="image-placeholder-label">Схема</div>
+                <div class="image-placeholder-title">RAG Pipeline</div>
+                <div class="image-placeholder-desc">
+                  Схема от корпуса нормативных текстов до объяснений с цитатами.
+                </div>
+                <div class="diagram">
+                  <div class="diagram-row">
+                    <div class="diagram-node">Corpus<br />Law 436‑FZ, Guides, Feedback</div>
+                    <span class="diagram-arrow">→</span>
+                    <div class="diagram-node">Normalize & Embed<br />Text Cleaning, E5 Embeddings</div>
+                    <span class="diagram-arrow">→</span>
+                    <div class="diagram-node">Vector Index<br />FAISS / Qdrant</div>
+                  </div>
+                  <div class="diagram-row">
+                    <div class="diagram-node">Scene + Category<br />Query</div>
+                    <span class="diagram-arrow">→</span>
+                    <div class="diagram-node">Top‑K Passages<br />Similarity Search</div>
+                    <span class="diagram-arrow">→</span>
+                    <div class="diagram-node">Augmented Prompt<br />Context + Scene</div>
+                    <span class="diagram-arrow">→</span>
+                    <div class="diagram-node">LLM<br />Classification + Reasoning</div>
+                    <span class="diagram-arrow">→</span>
+                    <div class="diagram-node diagram-node-muted">Result<br />Rating + Citations</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+</body>
+
+</html>
