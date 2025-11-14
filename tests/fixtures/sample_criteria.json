@@ -1,0 +1,28 @@
+{
+    "criteria": [
+        {
+            "id": "violence_1",
+            "text": "Graphic violence and gore is prohibited for audiences under 16",
+            "severity": "moderate",
+            "category": "violence"
+        },
+        {
+            "id": "alcohol_1",
+            "text": "Depiction of alcohol consumption should be minimal for family content",
+            "severity": "mild",
+            "category": "alcohol_drugs"
+        },
+        {
+            "id": "language_1",
+            "text": "Strong language and profanity is restricted for younger audiences",
+            "severity": "moderate",
+            "category": "language"
+        },
+        {
+            "id": "sexual_1",
+            "text": "Sexual content and innuendo should be age-appropriate",
+            "severity": "mild",
+            "category": "sexual_content"
+        }
+    ]
+}

@@ -1,0 +1,29 @@
+{
+    "analysis_id": "test-analysis-123",
+    "status": "completed",
+    "rating_result": {
+        "final_rating": "16+",
+        "categories": {
+            "violence": "moderate",
+            "sexual_content": "mild",
+            "language": "severe",
+            "alcohol_drugs": "mild",
+            "disturbing_scenes": "none"
+        },
+        "scenes": [
+            {
+                "id": 1,
+                "text": "The hero enters a dark alley and confronts a group of thugs.",
+                "categories": {
+                    "violence": "moderate"
+                },
+                "references": [
+                    "violence_1"
+                ]
+            }
+        ]
+    },
+    "processed_blocks": 5,
+    "total_blocks": 5,
+    "processing_time_ms": 1250
+}

@@ -140,9 +140,86 @@ flowchart LR
 
 For detailed architectural documentation, see:
 - [`docs/architecture.md`](docs/architecture.md) - Complete system architecture
+- [`docs/README.md`](docs/README.md) - Documentation navigation and overview
 - [`docs/diagrams/clean_architecture_layers.md`](docs/diagrams/clean_architecture_layers.md) - Layered architecture breakdown
 - [`docs/diagrams/overall_data_flow.md`](docs/diagrams/overall_data_flow.md) - System data flow
 - [`docs/diagrams/rag_pipeline.md`](docs/diagrams/rag_pipeline.md) - RAG integration details
+
+## 📁 Project Organization
+
+The ScriptRating project follows a well-organized structure to maintain scalability and clarity:
+
+### Root Directory Structure
+```
+script-rating/
+├── 📄 README.md                          # Main project documentation
+├── 📁 app/                               # Backend application (Clean Architecture)
+│   ├── 📁 presentation/api/              # FastAPI controllers and routes
+│   └── 📁 use_cases/scripts/             # Business logic use cases
+├── 📁 config/                            # Configuration files
+├── 📁 dataset/                           # Sample datasets and test scripts
+├── 📁 docs/                              # Comprehensive documentation
+│   ├── 📁 analysis/                      # Debug and error analysis reports
+│   ├── 📁 diagrams/                      # System architecture diagrams
+│   ├── 📁 features/                      # Feature-specific documentation
+│   ├── 📁 modules/                       # Detailed module specifications
+│   └── 📁 reports/                       # Implementation and testing reports
+├── 📁 flutter/                           # Flutter frontend application
+│   ├── 📁 lib/                           # Dart source code
+│   └── 📁 test/                          # Flutter test suite
+├── 📁 storage/                           # Generated files and cached data
+└── 📁 tests/                             # Backend test suite
+    ├── 📁 fixtures/                      # Test data and mock files
+    ├── 📁 integration/                   # End-to-end and integration tests
+    └── 📁 unit/                          # Unit tests for individual modules
+```
+
+### Documentation Organization
+
+**Core Documentation:**
+- [`docs/README.md`](docs/README.md) - Main documentation hub and navigation
+- [`docs/architecture.md`](docs/architecture.md) - High-level system architecture
+- [`docs/test_documentation.md`](docs/test_documentation.md) - Complete testing guide
+
+**Module Documentation** (`docs/modules/`):
+Detailed specifications for each system component:
+- [`document_parser.md`](docs/modules/document_parser.md) - PDF/DOCX processing
+- [`scene_segmenter.md`](docs/modules/scene_segmenter.md) - Script segmentation
+- [`llm_classifier.md`](docs/modules/llm_classifier.md) - AI content analysis
+- [`rating_engine.md`](docs/modules/rating_engine.md) - FZ-436 compliance
+- And 7 more module specifications...
+
+**Implementation Reports** (`docs/reports/`):
+Development progress and technical reports:
+- Backend implementation reports
+- Frontend development summaries
+- Integration testing results
+- Bug fix documentation
+
+**Analysis Reports** (`docs/analysis/`):
+Debugging and problem-solving documentation:
+- Error analysis reports
+- Performance investigations
+- Browser compatibility studies
+
+### Test Organization
+
+**Backend Tests** (`tests/`):
+- **Unit Tests** (`tests/unit/`) - Individual component testing
+- **Integration Tests** (`tests/integration/`) - End-to-end workflow testing
+- **Fixtures** (`tests/fixtures/`) - Mock data and test resources
+
+**Frontend Tests** (`flutter/test/`):
+- Unit tests for widgets and services
+- Integration tests for user workflows
+- Platform-specific test configurations
+
+### Key Benefits of Organization
+- **Clear Separation**: Each component has a dedicated location
+- **Scalable Structure**: Easy to add new modules and features
+- **Developer Onboarding**: New developers can quickly understand the codebase
+- **Maintenance**: Simplified updates and modifications
+- **Documentation Discovery**: Logical grouping makes finding information intuitive
 
 ## 🚀 Getting Started
 
@@ -338,9 +415,14 @@ make test-backend
 # Run with coverage
 pytest tests/ --cov=app --cov-report=html
 
+# Run specific test categories
+pytest tests/unit/ -v                    # Unit tests
+pytest tests/integration/ -v             # Integration tests
+
 # Run specific test file
-pytest tests/test_analysis.py -v
+pytest tests/unit/test_health.py -v
 ```
+For detailed testing documentation, see [`docs/test_documentation.md`](docs/test_documentation.md).
 
 #### Frontend Testing
 ```bash

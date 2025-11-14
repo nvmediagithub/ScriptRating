@@ -1,0 +1,29 @@
+{
+    "analysis_id": "flutter-test-analysis-456",
+    "status": "completed",
+    "rating_result": {
+        "final_rating": "12+",
+        "categories": {
+            "violence": "mild",
+            "sexual_content": "none",
+            "language": "mild",
+            "alcohol_drugs": "moderate",
+            "disturbing_scenes": "none"
+        },
+        "scenes": [
+            {
+                "id": 1,
+                "text": "Characters discuss their problems over drinks at a local bar.",
+                "categories": {
+                    "alcohol_drugs": "moderate"
+                },
+                "references": [
+                    "alcohol_1"
+                ]
+            }
+        ]
+    },
+    "processed_blocks": 3,
+    "total_blocks": 3,
+    "processing_time_ms": 890
+}
