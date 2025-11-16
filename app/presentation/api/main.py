@@ -14,6 +14,7 @@ from app.presentation.api.routes.chat_simple_updated import router as chat_route
 from app.presentation.api.routes.documents import router as documents_router
 from app.presentation.api.routes.analysis import router as analysis_router
 from app.presentation.api.routes.scripts import router as scripts_router
+from app.presentation.api.routes.rag import router as rag_router
 
 
 def create_app() -> FastAPI:
@@ -54,12 +55,28 @@ def create_app() -> FastAPI:
     app.include_router(documents_router, prefix="/api/documents", tags=["Documents"])
     app.include_router(analysis_router, prefix="/api/analysis", tags=["Analysis"])
     app.include_router(scripts_router, prefix="/api", tags=["Scripts"])
+    app.include_router(rag_router, prefix="/api/rag", tags=["RAG"])
 
     @app.on_event("startup")
     async def startup_event():
         """Handle application startup events."""
-        # Initialize database connections, caches, etc.
-        pass
+        # Initialize RAG services
+        from app.infrastructure.services.rag_factory import RAGServiceFactory
+        from app.presentation.api.routes.rag import set_rag_orchestrator, set_knowledge_base
+        
+        try:
+            knowledge_base = await RAGServiceFactory.initialize_services()
+            set_knowledge_base(knowledge_base)
+            
+            # Get RAG orchestrator if available
+            rag_orchestrator = RAGServiceFactory.get_rag_orchestrator()
+            if rag_orchestrator:
+                set_rag_orchestrator(rag_orchestrator)
+                
+            print("✅ RAG services initialized successfully")
+        except Exception as e:
+            print(f"❌ Failed to initialize RAG services: {e}")
+            # Continue without RAG services (graceful degradation)
 
     @app.on_event("shutdown")
     async def shutdown_event():

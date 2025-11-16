@@ -1,0 +1,83 @@
+{
+  "test_summary": {
+    "total_tests": 6,
+    "passed_tests": 1,
+    "failed_tests": 5,
+    "success_rate": 16.666666666666664,
+    "test_session_start": "2025-11-16T21:02:28.446658",
+    "test_session_end": "2025-11-16T21:02:31.831595",
+    "api_key_used": "sk-or-v1-f77999943af..."
+  },
+  "test_results": [
+    {
+      "test_name": "API Key Validation",
+      "success": true,
+      "details": "API key format valid: sk-or-v1-f77999943af...",
+      "duration": 1.9073486328125e-06,
+      "timestamp": "2025-11-16T21:02:28.446671",
+      "data": {
+        "key_preview": "sk-or-v1-f77999943af..."
+      }
+    },
+    {
+      "test_name": "API Connection",
+      "success": false,
+      "details": "API returned status 402: {\"error\":{\"message\":\"Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\",\"code\":402}}",
+      "duration": 0.7046260833740234,
+      "timestamp": "2025-11-16T21:02:29.151419",
+      "data": null
+    },
+    {
+      "test_name": "Model Testing",
+      "success": false,
+      "details": "0/3 models working",
+      "duration": 1.0066349506378174,
+      "timestamp": "2025-11-16T21:02:30.158456",
+      "data": {
+        "successful_models": [
+          {
+            "model": "openai/text-embedding-3-small",
+            "status": "failed_402"
+          },
+          {
+            "model": "openai/text-embedding-3-large",
+            "status": "failed_402"
+          },
+          {
+            "model": "cohere/embed-multilingual-v3.0",
+            "status": "failed_400"
+          }
+        ]
+      }
+    },
+    {
+      "test_name": "Batch Processing",
+      "success": false,
+      "details": "API returned status 402",
+      "duration": 0.3594779968261719,
+      "timestamp": "2025-11-16T21:02:30.518133",
+      "data": null
+    },
+    {
+      "test_name": "Rate Limit Testing",
+      "success": false,
+      "details": "0/3 requests successful",
+      "duration": 0.8519790172576904,
+      "timestamp": "2025-11-16T21:02:31.370628",
+      "data": {
+        "successful_requests": 0
+      }
+    },
+    {
+      "test_name": "Semantic Quality",
+      "success": false,
+      "details": "Error: Failed to get embeddings: 402",
+      "duration": 0.4607701301574707,
+      "timestamp": "2025-11-16T21:02:31.831459",
+      "data": null
+    }
+  ],
+  "recommendations": [
+    "Some tests failed - check API key and network connection"
+  ]
+}

@@ -2,11 +2,13 @@
 RAG (Retrieval Augmented Generation) API routes.
 
 This module provides endpoints for RAG-related operations including corpus management and queries.
+Now integrated with the new RAG infrastructure (EmbeddingService, VectorDatabaseService, RAGOrchestrator).
 """
 import uuid
+import logging
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import JSONResponse
 
 from app.presentation.api.schemas import (
@@ -21,12 +23,36 @@ from app.presentation.api.schemas import (
     ErrorDetail
 )
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
+# Global instances (will be initialized in main.py)
+_rag_orchestrator = None
+_knowledge_base = None
 
-# Mock storage for RAG corpus and queries
+# Mock storage for backward compatibility
 _mock_corpus = {}
 _mock_rag_queries = {}
+
+
+def get_rag_orchestrator():
+    """Dependency to get RAG orchestrator instance."""
+    if _rag_orchestrator is None:
+        raise HTTPException(
+            status_code=503,
+            detail="RAG orchestrator not initialized"
+        )
+    return _rag_orchestrator
+
+
+def get_knowledge_base():
+    """Dependency to get knowledge base instance."""
+    if _knowledge_base is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Knowledge base not initialized"
+        )
+    return _knowledge_base
 
 
 def _generate_mock_corpus():
@@ -76,11 +102,11 @@ _generate_mock_corpus()
     "/query",
     response_model=RAGQueryResponse,
     summary="Query RAG system",
-    description="Query the RAG system for relevant legal and reference content."
+    description="Query the RAG system for relevant legal and reference content using vector search."
 )
 async def query_rag(request: RAGQueryRequest) -> RAGQueryResponse:
     """
-    Query the RAG system.
+    Query the RAG system using vector search.
 
     Args:
         request: RAG query request with search parameters
@@ -88,44 +114,94 @@ async def query_rag(request: RAGQueryRequest) -> RAGQueryResponse:
     Returns:
         RAG query results with relevant content and citations
     """
-    # Filter corpus by category if specified
-    relevant_docs = []
-    for doc in _mock_corpus.values():
-        if request.category and doc["category"] != request.category:
-            continue
-        # Simple mock relevance scoring based on content matching
-        if any(word.lower() in doc["content"].lower() for word in request.query.split()):
-            relevant_docs.append(doc)
+    try:
+        # Try to use knowledge base (which may use RAG orchestrator internally)
+        if _knowledge_base:
+            legacy_results = await _knowledge_base.query(
+                text=request.query,
+                top_k=request.top_k,
+            )
+            
+            # Convert to API format
+            results = []
+            for doc in legacy_results:
+                # Map category from metadata if available
+                category = request.category or Category.VIOLENCE  # Default
+                if "category" in doc.get("metadata", {}):
+                    try:
+                        category = Category(doc["metadata"]["category"])
+                    except (ValueError, KeyError):
+                        pass
+                
+                results.append(RAGResult(
+                    content=doc["excerpt"],
+                    relevance_score=doc["score"],
+                    source=CitationSource(
+                        source_id=doc.get("document_id", "unknown"),
+                        title=doc.get("title", "Unknown Document"),
+                        section=f"Page {doc.get('page', 1)}, Para {doc.get('paragraph', 1)}"
+                    ),
+                    category=category
+                ))
+            
+            query_id = str(uuid.uuid4())
+            _mock_rag_queries[query_id] = {
+                "query_id": query_id,
+                "query": request.query,
+                "category": request.category,
+                "top_k": request.top_k,
+                "results": results,
+                "timestamp": datetime.utcnow()
+            }
+            
+            return RAGQueryResponse(
+                query=request.query,
+                results=results,
+                total_found=len(legacy_results)
+            )
+        
+        # Fallback to mock implementation
+        relevant_docs = []
+        for doc in _mock_corpus.values():
+            if request.category and doc["category"] != request.category:
+                continue
+            if any(word.lower() in doc["content"].lower() for word in request.query.split()):
+                relevant_docs.append(doc)
 
-    # Sort by relevance and limit results
-    relevant_docs.sort(key=lambda x: x["relevance_score"], reverse=True)
-    limited_docs = relevant_docs[:request.top_k]
+        relevant_docs.sort(key=lambda x: x["relevance_score"], reverse=True)
+        limited_docs = relevant_docs[:request.top_k]
 
-    # Convert to response format
-    results = []
-    for doc in limited_docs:
-        results.append(RAGResult(
-            content=doc["content"],
-            relevance_score=doc["relevance_score"],
-            source=CitationSource(**doc["source"]),
-            category=doc["category"]
-        ))
+        results = []
+        for doc in limited_docs:
+            results.append(RAGResult(
+                content=doc["content"],
+                relevance_score=doc["relevance_score"],
+                source=CitationSource(**doc["source"]),
+                category=doc["category"]
+            ))
 
-    query_id = str(uuid.uuid4())
-    _mock_rag_queries[query_id] = {
-        "query_id": query_id,
-        "query": request.query,
-        "category": request.category,
-        "top_k": request.top_k,
-        "results": results,
-        "timestamp": datetime.utcnow()
-    }
+        query_id = str(uuid.uuid4())
+        _mock_rag_queries[query_id] = {
+            "query_id": query_id,
+            "query": request.query,
+            "category": request.category,
+            "top_k": request.top_k,
+            "results": results,
+            "timestamp": datetime.utcnow()
+        }
 
-    return RAGQueryResponse(
-        query=request.query,
-        results=results,
-        total_found=len(relevant_docs)
-    )
+        return RAGQueryResponse(
+            query=request.query,
+            results=results,
+            total_found=len(relevant_docs)
+        )
+    
+    except Exception as e:
+        logger.error(f"Error in RAG query: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"RAG query failed: {str(e)}"
+        )
 
 
 @router.post(
@@ -340,3 +416,109 @@ async def get_rag_stats():
             "average_results_per_query": sum(len(q["results"]) for q in _mock_rag_queries.values()) / len(_mock_rag_queries) if _mock_rag_queries else 0
         }
     }
+
+
+@router.get(
+    "/health",
+    summary="RAG system health check",
+    description="Check the health status of RAG components."
+)
+async def rag_health_check():
+    """
+    Check RAG system health.
+    
+    Returns:
+        Health status of all RAG components
+    """
+    health = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "components": {},
+    }
+    
+    try:
+        # Check knowledge base
+        if _knowledge_base:
+            kb_status = await _knowledge_base.get_rag_status()
+            health["components"]["knowledge_base"] = kb_status
+            
+            # Check RAG orchestrator if available
+            if kb_status.get("rag_enabled") and _rag_orchestrator:
+                rag_health = await _rag_orchestrator.health_check()
+                health["components"]["rag_orchestrator"] = rag_health
+                
+                if rag_health.get("status") != "healthy":
+                    health["status"] = "degraded"
+        else:
+            health["status"] = "degraded"
+            health["components"]["knowledge_base"] = {
+                "available": False,
+                "message": "Knowledge base not initialized"
+            }
+    
+    except Exception as e:
+        logger.error(f"Health check error: {e}")
+        health["status"] = "unhealthy"
+        health["error"] = str(e)
+    
+    return health
+
+
+@router.get(
+    "/metrics",
+    summary="RAG system metrics",
+    description="Get performance metrics for the RAG system."
+)
+async def rag_metrics():
+    """
+    Get RAG system metrics.
+    
+    Returns:
+        Performance and usage metrics
+    """
+    metrics = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "legacy_corpus_size": len(_mock_corpus),
+        "total_queries": len(_mock_rag_queries),
+    }
+    
+    try:
+        # Get RAG orchestrator metrics if available
+        if _rag_orchestrator:
+            rag_metrics = await _rag_orchestrator.get_metrics()
+            metrics["rag_orchestrator"] = {
+                "indexed_documents": rag_metrics.total_indexed_documents,
+                "total_searches": rag_metrics.total_searches,
+                "average_search_time_ms": rag_metrics.average_search_time_ms,
+                "cache_hit_rate": rag_metrics.cache_hit_rate,
+                "vector_db_status": rag_metrics.vector_db_status,
+                "embedding_service_status": rag_metrics.embedding_service_status,
+            }
+        
+        # Get knowledge base stats
+        if _knowledge_base:
+            kb_stats = await _knowledge_base.get_document_stats()
+            metrics["knowledge_base"] = {
+                "documents_count": len(kb_stats),
+                "total_paragraphs": sum(
+                    doc.get("paragraphs_indexed", 0) for doc in kb_stats
+                ),
+            }
+    
+    except Exception as e:
+        logger.error(f"Error getting metrics: {e}")
+        metrics["error"] = str(e)
+    
+    return metrics
+
+
+def set_rag_orchestrator(orchestrator):
+    """Set the global RAG orchestrator instance."""
+    global _rag_orchestrator
+    _rag_orchestrator = orchestrator
+
+
+def set_knowledge_base(knowledge_base):
+    """Set the global knowledge base instance."""
+    global _knowledge_base
+    _knowledge_base = knowledge_base

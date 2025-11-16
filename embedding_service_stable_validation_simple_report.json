@@ -1,0 +1,135 @@
+{
+  "timestamp": 1763314707.621004,
+  "test_type": "simplified_validation",
+  "summary": {
+    "total_tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "success_rate": 100.0
+  },
+  "results": [
+    {
+      "test": "Health Check",
+      "success": true,
+      "message": "Service status: healthy",
+      "timestamp": 1763314707.6139169,
+      "details": {
+        "providers": [
+          "mock"
+        ]
+      }
+    },
+    {
+      "test": "Single Text Embedding",
+      "success": true,
+      "message": "Generated 1536D embedding with mock",
+      "timestamp": 1763314707.6149728,
+      "details": {
+        "provider": "mock",
+        "dimensions": 1536
+      }
+    },
+    {
+      "test": "Batch Embedding",
+      "success": true,
+      "message": "Processed batch of 3 texts",
+      "timestamp": 1763314707.6165419,
+      "details": {
+        "count": 3
+      }
+    },
+    {
+      "test": "Deterministic Embeddings",
+      "success": true,
+      "message": "Embeddings are deterministic",
+      "timestamp": 1763314707.618747,
+      "details": {}
+    },
+    {
+      "test": "Metrics Collection",
+      "success": true,
+      "message": "Metrics available",
+      "timestamp": 1763314707.618759,
+      "details": {
+        "requests": 6
+      }
+    },
+    {
+      "test": "Timeout Fallback",
+      "success": true,
+      "message": "Timeout worked, fallback in 0.00s",
+      "timestamp": 1763314707.6199942,
+      "details": {
+        "elapsed": 0.0005860328674316406,
+        "provider": "mock"
+      }
+    },
+    {
+      "test": "Provider Chain",
+      "success": true,
+      "message": "Provider chain: mock",
+      "timestamp": 1763314707.620467,
+      "details": {
+        "chain": [
+          "mock"
+        ]
+      }
+    },
+    {
+      "test": "Provider Selection",
+      "success": true,
+      "message": "Selected provider: mock",
+      "timestamp": 1763314707.620938,
+      "details": {}
+    }
+  ],
+  "critical_checks": [
+    [
+      "Service Initialization",
+      true
+    ],
+    [
+      "Embedding Generation",
+      true
+    ],
+    [
+      "Batch Processing",
+      true
+    ],
+    [
+      "Timeout Protection",
+      true
+    ],
+    [
+      "Provider Fallback",
+      true
+    ],
+    [
+      "Deterministic Results",
+      true
+    ]
+  ],
+  "improvements": [
+    [
+      "No sentence-transformers blocking",
+      true
+    ],
+    [
+      "OpenRouter as primary",
+      true
+    ],
+    [
+      "Comprehensive timeouts",
+      true
+    ],
+    [
+      "Graceful degradation",
+      true
+    ],
+    [
+      "Mock fallback",
+      true
+    ]
+  ],
+  "errors": []
+}

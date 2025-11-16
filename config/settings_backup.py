@@ -53,21 +53,9 @@ class Settings(BaseSettings):
     openrouter_app_name: Optional[str] = "ScriptRating"
     openrouter_timeout: int = 30
     
-    # Enhanced Embedding Service Configuration
-    embedding_primary_provider: str = "openrouter"  # Changed to OpenRouter for free embeddings
-    openai_embedding_api_key: Optional[str] = None
-    openai_embedding_model: str = "text-embedding-3-large"
-    huggingface_api_token: Optional[str] = None
-    local_embedding_model: str = "all-MiniLM-L6-v2"  # Removed - no longer used
-    embedding_batch_size: int = 50  # Reduced for stability
-    embedding_cache_ttl: int = 604800  # 7 days
-    embedding_timeout: float = 10.0  # New timeout setting
-    
     # Additional environment variables (for GUI compatibility)
     OPENROUTER_API_KEY: Optional[str] = None
     OPENROUTER_BASE_MODEL: Optional[str] = None
-    OPENAI_EMBEDDING_API_KEY: Optional[str] = None
-    HUGGINGFACE_API_TOKEN: Optional[str] = None
     
     storage_root: str = "storage"
     documents_dir: str = "storage/documents"
@@ -101,38 +89,6 @@ class Settings(BaseSettings):
     def get_openrouter_base_model(self) -> Optional[str]:
         """Get OpenRouter base model from environment or settings."""
         return self.effective_openrouter_base_model
-
-    # Enhanced embedding configuration methods
-    @property
-    def effective_embedding_provider(self) -> str:
-        """Get effective embedding provider."""
-        return os.getenv("EMBEDDING_PRIMARY_PROVIDER", self.embedding_primary_provider)
-
-    @property
-    def effective_openai_embedding_api_key(self) -> Optional[str]:
-        """Get OpenAI embedding API key from environment or settings."""
-        return self._get_env_var_or_setting("OPENAI_EMBEDDING_API_KEY", self.openai_embedding_api_key)
-
-    @property
-    def effective_huggingface_api_token(self) -> Optional[str]:
-        """Get HuggingFace API token from environment or settings."""
-        return self._get_env_var_or_setting("HUGGINGFACE_API_TOKEN", self.huggingface_api_token)
-
-    def get_embedding_config(self) -> dict:
-        """Get complete embedding configuration with stable settings."""
-        return {
-            "primary_provider": self.effective_embedding_provider,
-            "openai_api_key": self.effective_openai_embedding_api_key,
-            "openai_model": self.openai_embedding_model,
-            "openrouter_api_key": self.effective_openrouter_api_key,
-            "huggingface_token": self.effective_huggingface_api_token,
-            "local_model": self.local_embedding_model,  # Kept for backward compatibility
-            "batch_size": self.embedding_batch_size,
-            "cache_ttl": self.embedding_cache_ttl,
-            "embedding_timeout": self.embedding_timeout,
-            "stable_mode": True,  # Indicates stable embedding service
-            "free_priority": True  # Indicates focus on free solutions
-        }
 
 
 # Create settings instance
