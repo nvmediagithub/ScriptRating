@@ -1,4 +1,4 @@
-.PHONY: help install-backend run-backend test-backend lint-backend format-backend clean-backend docker-build-backend docker-run-backend install-frontend run-frontend test-frontend analyze-frontend format-frontend build-frontend clean-frontend help-backend help-frontend dev full-setup
+.PHONY: help install-backend run-backend test-backend lint-backend format-backend clean-backend docker-build-backend docker-run-backend install-frontend run-frontend test-frontend analyze-frontend format-frontend build-frontend clean-frontend help-backend help-frontend dev full-setup migrate-to-vector dry-run-migration rollback-migration test-migration
 
 help: ## Show this help message
 	@echo 'Project Development Commands:'
@@ -6,6 +6,12 @@ help: ## Show this help message
 	@echo 'Full Project:'
 	@echo '  dev              - Run both backend and frontend in development mode'
 	@echo '  full-setup       - Complete setup for both backend and frontend'
+	@echo ''
+	@echo 'Migration Commands:'
+	@echo '  migrate-to-vector    - Migrate KnowledgeBase from TF-IDF to vector search'
+	@echo '  dry-run-migration    - Test migration without making changes'
+	@echo '  rollback-migration   - Rollback to TF-IDF from vector search'
+	@echo '  test-migration       - Run migration tests with sample data'
 	@echo ''
 	@echo 'Backend Commands:'
 	@make -f Makefile help-backend 2>/dev/null || echo '  (see help-backend)'
@@ -84,3 +90,32 @@ full-setup: ## Complete setup for both backend and frontend
 	@echo "Environment files:"
 	@echo "  - Copy .env.example to .env for backend configuration"
 	@echo "  - Copy flutter/.env.example to flutter/.env for frontend configuration"
+
+# Migration commands
+migrate-to-vector: ## Migrate KnowledgeBase from TF-IDF to vector search
+	@echo "Starting migration from TF-IDF to vector search..."
+	@echo "⚠️  This will migrate existing documents to vector database"
+	@echo "   Progress will be tracked in migration_status.json"
+	@echo ""
+	python scripts/migrate_to_vector_search.py
+
+dry-run-migration: ## Test migration without making changes
+	@echo "Running migration in dry-run mode..."
+	@echo "No changes will be made to the database"
+	@echo ""
+	python scripts/migrate_to_vector_search.py --dry-run
+
+rollback-migration: ## Rollback to TF-IDF from vector search
+	@echo "⚠️  Rolling back to TF-IDF search..."
+	@echo "This will restore documents from backup and remove vector data"
+	@echo ""
+	@echo "Are you sure? This action cannot be easily undone."
+	@echo "Press Enter to continue or Ctrl+C to cancel"
+	@read -p ""
+	python scripts/migrate_to_vector_search.py --rollback
+
+test-migration: ## Run migration tests with sample data
+	@echo "Testing migration pipeline with sample data..."
+	@echo "This will create test documents and validate the migration process"
+	@echo ""
+	python scripts/test_migration_pipeline.py

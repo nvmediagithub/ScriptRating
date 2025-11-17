@@ -1,0 +1,3423 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Script Rating API",
+        "description": "API for rating and analyzing scripts using clean architecture",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/api/health": {
+            "get": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Chat Health Check",
+                "description": "Health check endpoint for chat service.",
+                "operationId": "chat_health_check_api_health_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/health/ready": {
+            "get": {
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Readiness Check",
+                "description": "Readiness check endpoint for load balancer health checks.\n\nReturns:\n    dict: Readiness status information.",
+                "operationId": "readiness_check_api_health_ready_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/providers": {
+            "get": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Get Llm Providers",
+                "description": "Get list of available LLM providers - simplified to just [\"local\", \"openrouter\"].",
+                "operationId": "get_llm_providers_api_llm_providers_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/models": {
+            "get": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Get Llm Models",
+                "description": "Get list of available LLM models - simplified.",
+                "operationId": "get_llm_models_api_llm_models_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/config": {
+            "get": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Get Llm Config",
+                "description": "Get current LLM configuration - simplified to just two modes.",
+                "operationId": "get_llm_config_api_llm_config_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Update Llm Config",
+                "description": "Update LLM configuration - simplified.",
+                "operationId": "update_llm_config_api_llm_config_put",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LLMConfigUpdateRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/config/mode": {
+            "put": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Switch Llm Mode",
+                "description": "Switch between local and openrouter modes - simplified endpoint.\n\nArgs:\n    provider: \"local\" or \"openrouter\"\n    model_name: Optional model name (defaults to provider's default model)",
+                "operationId": "switch_llm_mode_api_llm_config_mode_put",
+                "parameters": [
+                    {
+                        "name": "provider",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Provider"
+                        }
+                    },
+                    {
+                        "name": "model_name",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "title": "Model Name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/status/{provider}": {
+            "get": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Get Llm Status",
+                "description": "Check status of LLM provider - simplified.",
+                "operationId": "get_llm_status_api_llm_status__provider__get",
+                "parameters": [
+                    {
+                        "name": "provider",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Provider"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/status": {
+            "get": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Get All Llm Status",
+                "description": "Check status of all LLM providers - simplified.",
+                "operationId": "get_all_llm_status_api_llm_status_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/test": {
+            "post": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Test Llm",
+                "description": "Test LLM with a prompt - simplified.",
+                "operationId": "test_llm_api_llm_test_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LLMTestRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/local/models": {
+            "get": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Get Local Models",
+                "description": "Get information about local models - simplified.",
+                "operationId": "get_local_models_api_llm_local_models_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/local/models/load": {
+            "post": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Load Local Model",
+                "description": "Load a local model - simplified.",
+                "operationId": "load_local_model_api_llm_local_models_load_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "additionalProperties": true,
+                                "type": "object",
+                                "title": "Request"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/local/models/unload": {
+            "post": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Unload Local Model",
+                "description": "Unload a local model - simplified.",
+                "operationId": "unload_local_model_api_llm_local_models_unload_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "additionalProperties": true,
+                                "type": "object",
+                                "title": "Request"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/openrouter/status": {
+            "get": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Get Openrouter Status",
+                "description": "Get OpenRouter status - simplified.",
+                "operationId": "get_openrouter_status_api_llm_openrouter_status_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/openrouter/models": {
+            "get": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Get Openrouter Models",
+                "description": "Get OpenRouter models - simplified.",
+                "operationId": "get_openrouter_models_api_llm_openrouter_models_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/config/health": {
+            "get": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Get Llm Health Summary",
+                "description": "Get overall LLM system health - simplified.",
+                "operationId": "get_llm_health_summary_api_llm_config_health_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/performance": {
+            "get": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Get Performance Metrics",
+                "description": "Get performance metrics - simplified.",
+                "operationId": "get_performance_metrics_api_llm_performance_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/llm/usage": {
+            "get": {
+                "tags": [
+                    "LLM"
+                ],
+                "summary": "Get Usage Statistics",
+                "description": "Get usage statistics - simplified.",
+                "operationId": "get_usage_statistics_api_llm_usage_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/chats": {
+            "get": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Get Chat Sessions",
+                "description": "Get paginated list of all chat sessions.",
+                "operationId": "get_chat_sessions_api_chats_get",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Page number",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number"
+                    },
+                    {
+                        "name": "page_size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 200,
+                            "minimum": 1,
+                            "description": "Items per page",
+                            "default": 50,
+                            "title": "Page Size"
+                        },
+                        "description": "Items per page"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatSessionsListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Create Chat Session",
+                "description": "Create a new chat session.",
+                "operationId": "create_chat_session_api_chats_post",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChatSessionCreateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatSessionResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/chats/{chat_id}": {
+            "get": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Get Chat Session",
+                "description": "Get a specific chat session.",
+                "operationId": "get_chat_session_api_chats__chat_id__get",
+                "parameters": [
+                    {
+                        "name": "chat_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Chat Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatSessionResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Update Chat Session",
+                "description": "Update a chat session.",
+                "operationId": "update_chat_session_api_chats__chat_id__put",
+                "parameters": [
+                    {
+                        "name": "chat_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Chat Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChatSessionUpdateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatSessionResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Delete Chat Session",
+                "description": "Delete a chat session.",
+                "operationId": "delete_chat_session_api_chats__chat_id__delete",
+                "parameters": [
+                    {
+                        "name": "chat_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Chat Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/chats/{chat_id}/messages": {
+            "get": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Get Chat Messages",
+                "description": "Get paginated messages for a chat session.",
+                "operationId": "get_chat_messages_api_chats__chat_id__messages_get",
+                "parameters": [
+                    {
+                        "name": "chat_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Chat Id"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Page number",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number"
+                    },
+                    {
+                        "name": "page_size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 200,
+                            "minimum": 1,
+                            "description": "Items per page",
+                            "default": 50,
+                            "title": "Page Size"
+                        },
+                        "description": "Items per page"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatMessagesListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Send Chat Message",
+                "description": "Send a message in a chat session and get LLM response.",
+                "operationId": "send_chat_message_api_chats__chat_id__messages_post",
+                "parameters": [
+                    {
+                        "name": "chat_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Chat Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChatMessageCreateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatMessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/messages/{message_id}": {
+            "put": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Update Chat Message",
+                "description": "Update a chat message.",
+                "operationId": "update_chat_message_api_messages__message_id__put",
+                "parameters": [
+                    {
+                        "name": "message_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Message Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChatMessageUpdateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatMessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/chats/{chat_id}/process-llm": {
+            "post": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Process Llm Endpoint",
+                "description": "Process a message through the LLM service.",
+                "operationId": "process_llm_endpoint_api_chats__chat_id__process_llm_post",
+                "parameters": [
+                    {
+                        "name": "chat_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Chat Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProcessLLMRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessLLMResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stats": {
+            "get": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Get Chat Stats",
+                "description": "Get chat statistics.",
+                "operationId": "get_chat_stats_api_stats_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatStatsResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/documents/upload": {
+            "post": {
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Upload a document",
+                "description": "Upload script or criteria documents. Criteria files are indexed into the knowledge base.",
+                "operationId": "upload_document_api_documents_upload_post",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_upload_document_api_documents_upload_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DocumentUploadResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/documents/{document_id}": {
+            "get": {
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Get document metadata",
+                "description": "Retrieve metadata for an uploaded document.",
+                "operationId": "get_document_api_documents__document_id__get",
+                "parameters": [
+                    {
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Document Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Delete a document",
+                "description": "Delete an uploaded document and its associated data.",
+                "operationId": "delete_document_api_documents__document_id__delete",
+                "parameters": [
+                    {
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Document Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/documents/": {
+            "get": {
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "List uploaded documents",
+                "description": "Get a list of all uploaded documents.",
+                "operationId": "list_documents_api_documents__get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/analysis/analyze": {
+            "post": {
+                "tags": [
+                    "Analysis"
+                ],
+                "summary": "Start script analysis",
+                "description": "Initiate analysis of an uploaded script document.",
+                "operationId": "start_analysis_api_analysis_analyze_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ScriptAnalysisRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ScriptAnalysisResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/analysis/status/{analysis_id}": {
+            "get": {
+                "tags": [
+                    "Analysis"
+                ],
+                "summary": "Get analysis status",
+                "description": "Check the status and progress of a script analysis.",
+                "operationId": "get_analysis_status_api_analysis_status__analysis_id__get",
+                "parameters": [
+                    {
+                        "name": "analysis_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Analysis Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AnalysisStatusResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/analysis/{analysis_id}": {
+            "get": {
+                "tags": [
+                    "Analysis"
+                ],
+                "summary": "Get analysis results",
+                "description": "Retrieve the complete results of a script analysis.",
+                "operationId": "get_analysis_results_api_analysis__analysis_id__get",
+                "parameters": [
+                    {
+                        "name": "analysis_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Analysis Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ScriptAnalysisResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/analysis/{analysis_id}/cancel": {
+            "post": {
+                "tags": [
+                    "Analysis"
+                ],
+                "summary": "Cancel analysis",
+                "description": "Cancel a running analysis task.",
+                "operationId": "cancel_analysis_api_analysis__analysis_id__cancel_post",
+                "parameters": [
+                    {
+                        "name": "analysis_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Analysis Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/scripts": {
+            "get": {
+                "tags": [
+                    "Scripts"
+                ],
+                "summary": "Get Scripts",
+                "description": "Get all scripts.\n\nReturns:\n    List[dict]: List of script dictionaries.",
+                "operationId": "get_scripts_api_scripts_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Scripts"
+                ],
+                "summary": "Create Script",
+                "description": "Create a new script.\n\nReturns:\n    dict: Placeholder response for script creation.",
+                "operationId": "create_script_api_scripts_post",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/scripts/{script_id}": {
+            "get": {
+                "tags": [
+                    "Scripts"
+                ],
+                "summary": "Get Script",
+                "description": "Get a specific script by ID.\n\nArgs:\n    script_id: The unique identifier of the script.\n\nReturns:\n    dict: Placeholder response for script retrieval.",
+                "operationId": "get_script_api_scripts__script_id__get",
+                "parameters": [
+                    {
+                        "name": "script_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Script Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/rag/query": {
+            "post": {
+                "tags": [
+                    "RAG"
+                ],
+                "summary": "Query RAG system",
+                "description": "Query the RAG system for relevant legal and reference content using vector search.",
+                "operationId": "query_rag_api_rag_query_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RAGQueryRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RAGQueryResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/rag/corpus/update": {
+            "post": {
+                "tags": [
+                    "RAG"
+                ],
+                "summary": "Update corpus",
+                "description": "Add new content to the RAG knowledge corpus.",
+                "operationId": "update_corpus_api_rag_corpus_update_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CorpusUpdateRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CorpusUpdateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/rag/corpus": {
+            "get": {
+                "tags": [
+                    "RAG"
+                ],
+                "summary": "List corpus documents",
+                "description": "Get a list of documents in the RAG corpus.",
+                "operationId": "list_corpus_api_rag_corpus_get",
+                "parameters": [
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/Category"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by category",
+                            "title": "Category"
+                        },
+                        "description": "Filter by category"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 200,
+                            "minimum": 1,
+                            "description": "Maximum number of documents to return",
+                            "default": 50,
+                            "title": "Limit"
+                        },
+                        "description": "Maximum number of documents to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/rag/corpus/{document_id}": {
+            "get": {
+                "tags": [
+                    "RAG"
+                ],
+                "summary": "Get corpus document",
+                "description": "Get detailed information about a specific corpus document.",
+                "operationId": "get_corpus_document_api_rag_corpus__document_id__get",
+                "parameters": [
+                    {
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Document Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "RAG"
+                ],
+                "summary": "Delete corpus document",
+                "description": "Remove a document from the RAG corpus.",
+                "operationId": "delete_corpus_document_api_rag_corpus__document_id__delete",
+                "parameters": [
+                    {
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Document Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/rag/queries": {
+            "get": {
+                "tags": [
+                    "RAG"
+                ],
+                "summary": "List RAG queries",
+                "description": "Get a list of recent RAG queries and their results.",
+                "operationId": "list_rag_queries_api_rag_queries_get",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "minimum": 1,
+                            "description": "Maximum number of queries to return",
+                            "default": 20,
+                            "title": "Limit"
+                        },
+                        "description": "Maximum number of queries to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/rag/stats": {
+            "get": {
+                "tags": [
+                    "RAG"
+                ],
+                "summary": "Get RAG statistics",
+                "description": "Get statistical information about the RAG system.",
+                "operationId": "get_rag_stats_api_rag_stats_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/rag/health": {
+            "get": {
+                "tags": [
+                    "RAG"
+                ],
+                "summary": "RAG system health check",
+                "description": "Check the health status of RAG components.",
+                "operationId": "rag_health_check_api_rag_health_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/rag/metrics": {
+            "get": {
+                "tags": [
+                    "RAG"
+                ],
+                "summary": "RAG system metrics",
+                "description": "Get performance metrics for the RAG system.",
+                "operationId": "rag_metrics_api_rag_metrics_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "AgeRating": {
+                "type": "string",
+                "enum": [
+                    "0+",
+                    "6+",
+                    "12+",
+                    "16+",
+                    "18+"
+                ],
+                "title": "AgeRating"
+            },
+            "AnalysisOptions": {
+                "properties": {
+                    "target_rating": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/AgeRating"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Target age rating for analysis"
+                    },
+                    "include_recommendations": {
+                        "type": "boolean",
+                        "title": "Include Recommendations",
+                        "description": "Include recommendations in response",
+                        "default": true
+                    },
+                    "detailed_scenes": {
+                        "type": "boolean",
+                        "title": "Detailed Scenes",
+                        "description": "Include detailed scene breakdown",
+                        "default": false
+                    }
+                },
+                "type": "object",
+                "title": "AnalysisOptions",
+                "description": "Options for script analysis."
+            },
+            "AnalysisStatusResponse": {
+                "properties": {
+                    "analysis_id": {
+                        "type": "string",
+                        "title": "Analysis Id",
+                        "description": "Analysis ID"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status",
+                        "description": "Current status (pending/processing/completed/failed)"
+                    },
+                    "progress": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Progress",
+                        "description": "Progress percentage (0-100)"
+                    },
+                    "estimated_time_remaining": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Estimated Time Remaining",
+                        "description": "Estimated seconds remaining"
+                    },
+                    "processed_blocks": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "$ref": "#/components/schemas/SceneAssessment"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Processed Blocks",
+                        "description": "Blocks processed so far"
+                    },
+                    "rating_result": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/RatingResult"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Intermediate or final rating result"
+                    },
+                    "recommendations": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Recommendations",
+                        "description": "Recommendations when available"
+                    },
+                    "errors": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Errors",
+                        "description": "Error details if analysis failed"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "analysis_id",
+                    "status"
+                ],
+                "title": "AnalysisStatusResponse",
+                "description": "Response model for analysis status check."
+            },
+            "Body_upload_document_api_documents_upload_post": {
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "format": "binary",
+                        "title": "File"
+                    },
+                    "filename": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Filename"
+                    },
+                    "document_type": {
+                        "$ref": "#/components/schemas/DocumentType",
+                        "default": "script"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "file"
+                ],
+                "title": "Body_upload_document_api_documents_upload_post"
+            },
+            "Category": {
+                "type": "string",
+                "enum": [
+                    "violence",
+                    "sexual_content",
+                    "language",
+                    "alcohol_drugs",
+                    "disturbing_scenes"
+                ],
+                "title": "Category"
+            },
+            "ChatMessageCreateRequest": {
+                "properties": {
+                    "content": {
+                        "type": "string",
+                        "maxLength": 10000,
+                        "minLength": 1,
+                        "title": "Content",
+                        "description": "Message content"
+                    },
+                    "role": {
+                        "$ref": "#/components/schemas/MessageRole",
+                        "description": "Message role",
+                        "default": "user"
+                    },
+                    "metadata": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Metadata",
+                        "description": "Optional message metadata"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "content"
+                ],
+                "title": "ChatMessageCreateRequest",
+                "description": "Request model for creating a new chat message."
+            },
+            "ChatMessageResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "session_id": {
+                        "type": "string",
+                        "title": "Session Id"
+                    },
+                    "role": {
+                        "type": "string",
+                        "title": "Role"
+                    },
+                    "content": {
+                        "type": "string",
+                        "title": "Content"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "updated_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Updated At"
+                    },
+                    "is_streaming": {
+                        "type": "boolean",
+                        "title": "Is Streaming"
+                    },
+                    "llm_provider": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Llm Provider"
+                    },
+                    "llm_model": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Llm Model"
+                    },
+                    "response_time_ms": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Response Time Ms"
+                    },
+                    "tokens_used": {
+                        "type": "integer",
+                        "title": "Tokens Used",
+                        "default": 0
+                    },
+                    "error_message": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Message"
+                    },
+                    "metadata": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Metadata"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "session_id",
+                    "role",
+                    "content",
+                    "created_at",
+                    "is_streaming"
+                ],
+                "title": "ChatMessageResponse",
+                "description": "Response model for chat message data."
+            },
+            "ChatMessageUpdateRequest": {
+                "properties": {
+                    "content": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 10000,
+                                "minLength": 1
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Content",
+                        "description": "Updated message content"
+                    },
+                    "is_streaming": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Is Streaming",
+                        "description": "Streaming status"
+                    },
+                    "tokens_used": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "minimum": 0.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Tokens Used",
+                        "description": "Token count"
+                    },
+                    "response_time_ms": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "minimum": 0.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Response Time Ms",
+                        "description": "Response time in milliseconds"
+                    },
+                    "error_message": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Message",
+                        "description": "Error message if any"
+                    }
+                },
+                "type": "object",
+                "title": "ChatMessageUpdateRequest",
+                "description": "Request model for updating a chat message (e.g., streaming response)."
+            },
+            "ChatMessagesListResponse": {
+                "properties": {
+                    "messages": {
+                        "items": {
+                            "$ref": "#/components/schemas/ChatMessageResponse"
+                        },
+                        "type": "array",
+                        "title": "Messages"
+                    },
+                    "total_count": {
+                        "type": "integer",
+                        "title": "Total Count"
+                    },
+                    "page": {
+                        "type": "integer",
+                        "title": "Page"
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "title": "Page Size"
+                    },
+                    "has_more": {
+                        "type": "boolean",
+                        "title": "Has More"
+                    },
+                    "session_id": {
+                        "type": "string",
+                        "title": "Session Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "messages",
+                    "total_count",
+                    "page",
+                    "page_size",
+                    "has_more",
+                    "session_id"
+                ],
+                "title": "ChatMessagesListResponse",
+                "description": "Response model for paginated message list."
+            },
+            "ChatSessionCreateRequest": {
+                "properties": {
+                    "title": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 500
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Title",
+                        "description": "Optional session title"
+                    },
+                    "llm_provider": {
+                        "$ref": "#/components/schemas/app__presentation__api__schemas__chat_schemas__LLMProvider",
+                        "description": "LLM provider to use"
+                    },
+                    "llm_model": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "title": "Llm Model",
+                        "description": "LLM model name"
+                    },
+                    "settings": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Settings",
+                        "description": "Optional session settings"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "llm_provider",
+                    "llm_model"
+                ],
+                "title": "ChatSessionCreateRequest",
+                "description": "Request model for creating a new chat session."
+            },
+            "ChatSessionResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "title": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Title"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "title": "User Id"
+                    },
+                    "llm_provider": {
+                        "type": "string",
+                        "title": "Llm Provider"
+                    },
+                    "llm_model": {
+                        "type": "string",
+                        "title": "Llm Model"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Updated At"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "title": "Is Active"
+                    },
+                    "message_count": {
+                        "type": "integer",
+                        "title": "Message Count"
+                    },
+                    "settings": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Settings"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "title",
+                    "user_id",
+                    "llm_provider",
+                    "llm_model",
+                    "created_at",
+                    "updated_at",
+                    "is_active",
+                    "message_count"
+                ],
+                "title": "ChatSessionResponse",
+                "description": "Response model for chat session data."
+            },
+            "ChatSessionUpdateRequest": {
+                "properties": {
+                    "title": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 500
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Title",
+                        "description": "Updated session title"
+                    },
+                    "is_active": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Is Active",
+                        "description": "Session active status"
+                    },
+                    "settings": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Settings",
+                        "description": "Updated session settings"
+                    }
+                },
+                "type": "object",
+                "title": "ChatSessionUpdateRequest",
+                "description": "Request model for updating a chat session."
+            },
+            "ChatSessionsListResponse": {
+                "properties": {
+                    "sessions": {
+                        "items": {
+                            "$ref": "#/components/schemas/ChatSessionResponse"
+                        },
+                        "type": "array",
+                        "title": "Sessions"
+                    },
+                    "total_count": {
+                        "type": "integer",
+                        "title": "Total Count"
+                    },
+                    "page": {
+                        "type": "integer",
+                        "title": "Page"
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "title": "Page Size"
+                    },
+                    "has_more": {
+                        "type": "boolean",
+                        "title": "Has More"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "sessions",
+                    "total_count",
+                    "page",
+                    "page_size",
+                    "has_more"
+                ],
+                "title": "ChatSessionsListResponse",
+                "description": "Response model for paginated session list."
+            },
+            "ChatStatsResponse": {
+                "properties": {
+                    "total_sessions": {
+                        "type": "integer",
+                        "title": "Total Sessions"
+                    },
+                    "total_messages": {
+                        "type": "integer",
+                        "title": "Total Messages"
+                    },
+                    "active_sessions": {
+                        "type": "integer",
+                        "title": "Active Sessions"
+                    },
+                    "messages_today": {
+                        "type": "integer",
+                        "title": "Messages Today"
+                    },
+                    "average_response_time_ms": {
+                        "type": "number",
+                        "title": "Average Response Time Ms"
+                    },
+                    "most_used_provider": {
+                        "type": "string",
+                        "title": "Most Used Provider"
+                    },
+                    "most_used_model": {
+                        "type": "string",
+                        "title": "Most Used Model"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "total_sessions",
+                    "total_messages",
+                    "active_sessions",
+                    "messages_today",
+                    "average_response_time_ms",
+                    "most_used_provider",
+                    "most_used_model"
+                ],
+                "title": "ChatStatsResponse",
+                "description": "Response model for chat statistics."
+            },
+            "CitationSource": {
+                "properties": {
+                    "source_id": {
+                        "type": "string",
+                        "title": "Source Id",
+                        "description": "Unique source identifier"
+                    },
+                    "title": {
+                        "type": "string",
+                        "title": "Title",
+                        "description": "Source title"
+                    },
+                    "section": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Section",
+                        "description": "Section reference"
+                    },
+                    "page": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Page",
+                        "description": "Page number"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "source_id",
+                    "title"
+                ],
+                "title": "CitationSource",
+                "description": "Source information for citations."
+            },
+            "CorpusUpdateRequest": {
+                "properties": {
+                    "content": {
+                        "type": "string",
+                        "title": "Content",
+                        "description": "New content to add"
+                    },
+                    "category": {
+                        "$ref": "#/components/schemas/Category",
+                        "description": "Content category"
+                    },
+                    "source_title": {
+                        "type": "string",
+                        "title": "Source Title",
+                        "description": "Source title"
+                    },
+                    "source_metadata": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Source Metadata",
+                        "description": "Additional metadata"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "content",
+                    "category",
+                    "source_title"
+                ],
+                "title": "CorpusUpdateRequest",
+                "description": "Request model for corpus updates."
+            },
+            "CorpusUpdateResponse": {
+                "properties": {
+                    "update_id": {
+                        "type": "string",
+                        "title": "Update Id",
+                        "description": "Unique identifier for the update"
+                    },
+                    "content_hash": {
+                        "type": "string",
+                        "title": "Content Hash",
+                        "description": "Hash of the added content"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Updated At",
+                        "description": "Update timestamp"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "update_id",
+                    "content_hash",
+                    "updated_at"
+                ],
+                "title": "CorpusUpdateResponse",
+                "description": "Response model for corpus updates."
+            },
+            "DocumentType": {
+                "type": "string",
+                "enum": [
+                    "script",
+                    "criteria"
+                ],
+                "title": "DocumentType"
+            },
+            "DocumentUploadResponse": {
+                "properties": {
+                    "document_id": {
+                        "type": "string",
+                        "title": "Document Id",
+                        "description": "Unique identifier for the uploaded document"
+                    },
+                    "filename": {
+                        "type": "string",
+                        "title": "Filename",
+                        "description": "Name of the uploaded file"
+                    },
+                    "uploaded_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Uploaded At",
+                        "description": "Timestamp of upload"
+                    },
+                    "document_type": {
+                        "$ref": "#/components/schemas/DocumentType",
+                        "description": "Type of uploaded document (script or criteria)"
+                    },
+                    "chunks_indexed": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Chunks Indexed",
+                        "description": "Number of knowledge chunks indexed for criteria documents"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status",
+                        "description": "Upload status",
+                        "default": "uploaded"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "document_id",
+                    "filename",
+                    "uploaded_at",
+                    "document_type"
+                ],
+                "title": "DocumentUploadResponse",
+                "description": "Response model for successful document upload."
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "HighlightFragment": {
+                "properties": {
+                    "start": {
+                        "type": "integer",
+                        "title": "Start",
+                        "description": "Start index within block text"
+                    },
+                    "end": {
+                        "type": "integer",
+                        "title": "End",
+                        "description": "End index within block text"
+                    },
+                    "text": {
+                        "type": "string",
+                        "title": "Text",
+                        "description": "Text fragment that triggered the rating"
+                    },
+                    "category": {
+                        "$ref": "#/components/schemas/Category",
+                        "description": "Category responsible for the highlight"
+                    },
+                    "severity": {
+                        "$ref": "#/components/schemas/Severity",
+                        "description": "Severity level for this fragment"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "start",
+                    "end",
+                    "text",
+                    "category",
+                    "severity"
+                ],
+                "title": "HighlightFragment",
+                "description": "Highlighted fragment inside the analyzed text."
+            },
+            "LLMConfigUpdateRequest": {
+                "properties": {
+                    "provider": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/app__presentation__api__schemas__LLMProvider"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Provider to update"
+                    },
+                    "model_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Model Name",
+                        "description": "Model to switch to"
+                    },
+                    "settings": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/LLMProviderSettings"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Updated provider settings"
+                    },
+                    "llm_model_config": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/LLMModelConfig"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Updated model configuration"
+                    }
+                },
+                "type": "object",
+                "title": "LLMConfigUpdateRequest",
+                "description": "Request model for updating LLM configuration."
+            },
+            "LLMModelConfig": {
+                "properties": {
+                    "model_name": {
+                        "type": "string",
+                        "title": "Model Name",
+                        "description": "Name of the LLM model"
+                    },
+                    "provider": {
+                        "$ref": "#/components/schemas/app__presentation__api__schemas__LLMProvider",
+                        "description": "Provider for this model"
+                    },
+                    "context_window": {
+                        "type": "integer",
+                        "title": "Context Window",
+                        "description": "Maximum context window size",
+                        "default": 4096
+                    },
+                    "max_tokens": {
+                        "type": "integer",
+                        "title": "Max Tokens",
+                        "description": "Maximum output tokens",
+                        "default": 2048
+                    },
+                    "temperature": {
+                        "type": "number",
+                        "title": "Temperature",
+                        "description": "Sampling temperature",
+                        "default": 0.7
+                    },
+                    "top_p": {
+                        "type": "number",
+                        "title": "Top P",
+                        "description": "Top-p sampling parameter",
+                        "default": 0.9
+                    },
+                    "frequency_penalty": {
+                        "type": "number",
+                        "title": "Frequency Penalty",
+                        "description": "Frequency penalty",
+                        "default": 0.0
+                    },
+                    "presence_penalty": {
+                        "type": "number",
+                        "title": "Presence Penalty",
+                        "description": "Presence penalty",
+                        "default": 0.0
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "model_name",
+                    "provider"
+                ],
+                "title": "LLMModelConfig",
+                "description": "Configuration for LLM models."
+            },
+            "LLMProviderSettings": {
+                "properties": {
+                    "provider": {
+                        "$ref": "#/components/schemas/app__presentation__api__schemas__LLMProvider",
+                        "description": "LLM provider type"
+                    },
+                    "api_key": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Api Key",
+                        "description": "API key for external providers"
+                    },
+                    "base_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Base Url",
+                        "description": "Base URL for local LLM server"
+                    },
+                    "timeout": {
+                        "type": "integer",
+                        "title": "Timeout",
+                        "description": "Request timeout in seconds",
+                        "default": 30
+                    },
+                    "max_retries": {
+                        "type": "integer",
+                        "title": "Max Retries",
+                        "description": "Maximum retry attempts",
+                        "default": 3
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "provider"
+                ],
+                "title": "LLMProviderSettings",
+                "description": "Settings for LLM providers."
+            },
+            "LLMTestRequest": {
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "title": "Prompt",
+                        "description": "Test prompt to send to LLM"
+                    },
+                    "model_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Model Name",
+                        "description": "Specific model to test (default: active)"
+                    },
+                    "max_tokens": {
+                        "type": "integer",
+                        "title": "Max Tokens",
+                        "description": "Maximum tokens in response",
+                        "default": 100
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "prompt"
+                ],
+                "title": "LLMTestRequest",
+                "description": "Request model for LLM testing."
+            },
+            "MessageRole": {
+                "type": "string",
+                "enum": [
+                    "user",
+                    "assistant",
+                    "system"
+                ],
+                "title": "MessageRole",
+                "description": "Message role enumeration."
+            },
+            "NormativeReference": {
+                "properties": {
+                    "document_id": {
+                        "type": "string",
+                        "title": "Document Id",
+                        "description": "Identifier of the source document"
+                    },
+                    "title": {
+                        "type": "string",
+                        "title": "Title",
+                        "description": "Source document title"
+                    },
+                    "page": {
+                        "type": "integer",
+                        "title": "Page",
+                        "description": "Referenced page number"
+                    },
+                    "paragraph": {
+                        "type": "integer",
+                        "title": "Paragraph",
+                        "description": "Referenced paragraph number"
+                    },
+                    "excerpt": {
+                        "type": "string",
+                        "title": "Excerpt",
+                        "description": "Excerpt of the normative text"
+                    },
+                    "score": {
+                        "type": "number",
+                        "title": "Score",
+                        "description": "Relevance score (0-1)"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "document_id",
+                    "title",
+                    "page",
+                    "paragraph",
+                    "excerpt",
+                    "score"
+                ],
+                "title": "NormativeReference",
+                "description": "Reference to a normative document fragment used for justification."
+            },
+            "ProcessLLMRequest": {
+                "properties": {
+                    "message_id": {
+                        "type": "string",
+                        "title": "Message Id",
+                        "description": "ID of the message to process"
+                    },
+                    "session_id": {
+                        "type": "string",
+                        "title": "Session Id",
+                        "description": "Session ID"
+                    },
+                    "prompt": {
+                        "type": "string",
+                        "maxLength": 10000,
+                        "minLength": 1,
+                        "title": "Prompt",
+                        "description": "Prompt to send to LLM"
+                    },
+                    "model_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Model Name",
+                        "description": "Override model name"
+                    },
+                    "provider": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/app__presentation__api__schemas__chat_schemas__LLMProvider"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Override provider"
+                    },
+                    "stream": {
+                        "type": "boolean",
+                        "title": "Stream",
+                        "description": "Whether to stream response",
+                        "default": false
+                    },
+                    "max_tokens": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "maximum": 8192.0,
+                                "minimum": 1.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Max Tokens",
+                        "description": "Maximum tokens to generate"
+                    },
+                    "temperature": {
+                        "anyOf": [
+                            {
+                                "type": "number",
+                                "maximum": 2.0,
+                                "minimum": 0.0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Temperature",
+                        "description": "Response creativity"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "message_id",
+                    "session_id",
+                    "prompt"
+                ],
+                "title": "ProcessLLMRequest",
+                "description": "Request model for processing LLM response."
+            },
+            "ProcessLLMResponse": {
+                "properties": {
+                    "message_id": {
+                        "type": "string",
+                        "title": "Message Id"
+                    },
+                    "session_id": {
+                        "type": "string",
+                        "title": "Session Id"
+                    },
+                    "response": {
+                        "type": "string",
+                        "title": "Response"
+                    },
+                    "tokens_used": {
+                        "type": "integer",
+                        "title": "Tokens Used"
+                    },
+                    "response_time_ms": {
+                        "type": "number",
+                        "title": "Response Time Ms"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "title": "Provider"
+                    },
+                    "model": {
+                        "type": "string",
+                        "title": "Model"
+                    },
+                    "success": {
+                        "type": "boolean",
+                        "title": "Success"
+                    },
+                    "error_message": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Message"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "message_id",
+                    "session_id",
+                    "response",
+                    "tokens_used",
+                    "response_time_ms",
+                    "provider",
+                    "model",
+                    "success"
+                ],
+                "title": "ProcessLLMResponse",
+                "description": "Response model for LLM processing."
+            },
+            "RAGQueryRequest": {
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "title": "Query",
+                        "description": "Search query"
+                    },
+                    "category": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Category"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Filter by category"
+                    },
+                    "top_k": {
+                        "type": "integer",
+                        "title": "Top K",
+                        "description": "Number of results to return",
+                        "default": 5
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "query"
+                ],
+                "title": "RAGQueryRequest",
+                "description": "Request model for RAG queries."
+            },
+            "RAGQueryResponse": {
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "title": "Query",
+                        "description": "Original query"
+                    },
+                    "results": {
+                        "items": {
+                            "$ref": "#/components/schemas/RAGResult"
+                        },
+                        "type": "array",
+                        "title": "Results",
+                        "description": "Retrieved results"
+                    },
+                    "total_found": {
+                        "type": "integer",
+                        "title": "Total Found",
+                        "description": "Total relevant documents found"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "query",
+                    "results",
+                    "total_found"
+                ],
+                "title": "RAGQueryResponse",
+                "description": "Response model for RAG queries."
+            },
+            "RAGResult": {
+                "properties": {
+                    "content": {
+                        "type": "string",
+                        "title": "Content",
+                        "description": "Relevant content excerpt"
+                    },
+                    "relevance_score": {
+                        "type": "number",
+                        "title": "Relevance Score",
+                        "description": "Relevance score"
+                    },
+                    "source": {
+                        "$ref": "#/components/schemas/CitationSource",
+                        "description": "Citation source"
+                    },
+                    "category": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Category"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Content category"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "content",
+                    "relevance_score",
+                    "source"
+                ],
+                "title": "RAGResult",
+                "description": "Individual RAG query result."
+            },
+            "RatingResult": {
+                "properties": {
+                    "final_rating": {
+                        "$ref": "#/components/schemas/AgeRating",
+                        "description": "Calculated age rating"
+                    },
+                    "target_rating": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/AgeRating"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Target rating used for comparison"
+                    },
+                    "confidence_score": {
+                        "type": "number",
+                        "title": "Confidence Score",
+                        "description": "Confidence score (0-1)"
+                    },
+                    "problem_scenes_count": {
+                        "type": "integer",
+                        "title": "Problem Scenes Count",
+                        "description": "Number of scenes with issues"
+                    },
+                    "categories_summary": {
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/Severity"
+                        },
+                        "propertyNames": {
+                            "$ref": "#/components/schemas/Category"
+                        },
+                        "type": "object",
+                        "title": "Categories Summary",
+                        "description": "Summary of highest severity per category"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "final_rating",
+                    "confidence_score",
+                    "problem_scenes_count",
+                    "categories_summary"
+                ],
+                "title": "RatingResult",
+                "description": "Overall rating result."
+            },
+            "SceneAssessment": {
+                "properties": {
+                    "scene_number": {
+                        "type": "integer",
+                        "title": "Scene Number",
+                        "description": "Scene number in the script"
+                    },
+                    "heading": {
+                        "type": "string",
+                        "title": "Heading",
+                        "description": "Scene heading"
+                    },
+                    "page_range": {
+                        "type": "string",
+                        "title": "Page Range",
+                        "description": "Page range for the scene"
+                    },
+                    "categories": {
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/Severity"
+                        },
+                        "propertyNames": {
+                            "$ref": "#/components/schemas/Category"
+                        },
+                        "type": "object",
+                        "title": "Categories",
+                        "description": "Severity ratings by category"
+                    },
+                    "flagged_content": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Flagged Content",
+                        "description": "List of flagged content items"
+                    },
+                    "justification": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Justification",
+                        "description": "Explanation for the rating"
+                    },
+                    "age_rating": {
+                        "$ref": "#/components/schemas/AgeRating",
+                        "description": "Calculated age rating for the block"
+                    },
+                    "llm_comment": {
+                        "type": "string",
+                        "title": "Llm Comment",
+                        "description": "Generated explanation from LLM"
+                    },
+                    "references": {
+                        "items": {
+                            "$ref": "#/components/schemas/NormativeReference"
+                        },
+                        "type": "array",
+                        "title": "References",
+                        "description": "Normative references used"
+                    },
+                    "text": {
+                        "type": "string",
+                        "title": "Text",
+                        "description": "Full text of the semantic block"
+                    },
+                    "text_preview": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Text Preview",
+                        "description": "Short preview of the analyzed block text"
+                    },
+                    "highlights": {
+                        "items": {
+                            "$ref": "#/components/schemas/HighlightFragment"
+                        },
+                        "type": "array",
+                        "title": "Highlights",
+                        "description": "Highlighted fragments contributing to rating"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "scene_number",
+                    "heading",
+                    "page_range",
+                    "categories",
+                    "age_rating",
+                    "llm_comment",
+                    "text"
+                ],
+                "title": "SceneAssessment",
+                "description": "Assessment details for a single scene."
+            },
+            "ScriptAnalysisRequest": {
+                "properties": {
+                    "document_id": {
+                        "type": "string",
+                        "title": "Document Id",
+                        "description": "ID of the uploaded document"
+                    },
+                    "criteria_document_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Criteria Document Id",
+                        "description": "ID of the criteria document for references"
+                    },
+                    "options": {
+                        "$ref": "#/components/schemas/AnalysisOptions",
+                        "description": "Analysis options"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "document_id"
+                ],
+                "title": "ScriptAnalysisRequest",
+                "description": "Request model for script analysis."
+            },
+            "ScriptAnalysisResponse": {
+                "properties": {
+                    "analysis_id": {
+                        "type": "string",
+                        "title": "Analysis Id",
+                        "description": "Unique identifier for the analysis"
+                    },
+                    "document_id": {
+                        "type": "string",
+                        "title": "Document Id",
+                        "description": "ID of the analyzed document"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status",
+                        "description": "Analysis status"
+                    },
+                    "rating_result": {
+                        "$ref": "#/components/schemas/RatingResult",
+                        "description": "Overall rating result"
+                    },
+                    "scene_assessments": {
+                        "items": {
+                            "$ref": "#/components/schemas/SceneAssessment"
+                        },
+                        "type": "array",
+                        "title": "Scene Assessments",
+                        "description": "Detailed scene assessments"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Analysis timestamp"
+                    },
+                    "recommendations": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Recommendations",
+                        "description": "Improvement recommendations"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "analysis_id",
+                    "document_id",
+                    "status",
+                    "rating_result",
+                    "scene_assessments",
+                    "created_at"
+                ],
+                "title": "ScriptAnalysisResponse",
+                "description": "Response model for script analysis."
+            },
+            "Severity": {
+                "type": "string",
+                "enum": [
+                    "none",
+                    "mild",
+                    "moderate",
+                    "severe"
+                ],
+                "title": "Severity"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            },
+            "app__presentation__api__schemas__LLMProvider": {
+                "type": "string",
+                "enum": [
+                    "local",
+                    "openrouter"
+                ],
+                "title": "LLMProvider",
+                "description": "LLM provider types."
+            },
+            "app__presentation__api__schemas__chat_schemas__LLMProvider": {
+                "type": "string",
+                "enum": [
+                    "LOCAL",
+                    "OPENROUTER"
+                ],
+                "title": "LLMProvider",
+                "description": "LLM provider enumeration."
+            }
+        }
+    }
+}

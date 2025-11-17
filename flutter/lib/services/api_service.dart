@@ -1,3 +1,4 @@
+import '../models/document_upload_response.dart';
 import 'package:dio/dio.dart';
 import '../models/analysis_result.dart';
 import '../models/analysis_status.dart';
@@ -50,7 +51,7 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> uploadDocument(
+  Future<DocumentUploadResponse> uploadDocument(
     String filename,
     List<int> bytes, {
     DocumentType documentType = DocumentType.script,
@@ -67,7 +68,7 @@ class ApiService {
         'document_type': documentType.value,
       });
       final response = await _dio.post('/documents/upload', data: formData);
-      return response.data as Map<String, dynamic>;
+      return DocumentUploadResponse.fromJson(response.data);
     } catch (e) {
       throw Exception('Failed to upload document: $e');
     }

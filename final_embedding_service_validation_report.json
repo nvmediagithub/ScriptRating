@@ -1,6 +1,6 @@
 {
-  "validation_timestamp": 1763315496.3537211,
-  "test_duration": 5.357224941253662,
+  "validation_timestamp": 1763372353.5939171,
+  "test_duration": 10.84067416191101,
   "summary": {
     "total_tests": 15,
     "passed": 14,
@@ -14,10 +14,10 @@
       "test": "Service Initialization",
       "success": true,
       "message": "Initialized in 0.00s (no hanging)",
-      "elapsed_time": 0.0005230903625488281,
-      "timestamp": 1763315490.996962,
+      "elapsed_time": 0.0016596317291259766,
+      "timestamp": 1763372342.749864,
       "details": {
-        "init_time": 0.0004858970642089844,
+        "init_time": 0.0009710788726806641,
         "expected_max": 10.0
       }
     },
@@ -25,18 +25,18 @@
       "test": "Rapid Re-initialization",
       "success": true,
       "message": "Re-initialized in 0.00s",
-      "elapsed_time": 0.0009601116180419922,
-      "timestamp": 1763315490.997399,
+      "elapsed_time": 0.0025186538696289062,
+      "timestamp": 1763372342.7507231,
       "details": {
-        "reinit_time": 0.00042700767517089844
+        "reinit_time": 0.000736236572265625
       }
     },
     {
       "test": "OpenRouter No Key Handling",
       "success": true,
       "message": "Gracefully falls back to mock when no API key",
-      "elapsed_time": 0.0018320083618164062,
-      "timestamp": 1763315490.998271,
+      "elapsed_time": 0.004001617431640625,
+      "timestamp": 1763372342.7522058,
       "details": {
         "provider": "mock"
       }
@@ -45,19 +45,19 @@
       "test": "OpenRouter Fake Key Handling",
       "success": true,
       "message": "Handled fake key correctly, provider: mock",
-      "elapsed_time": 0.9633438587188721,
-      "timestamp": 1763315491.959784,
+      "elapsed_time": 1.2311172485351562,
+      "timestamp": 1763372343.9793217,
       "details": {
         "provider": "mock",
-        "elapsed": 0.6079168319702148
+        "elapsed": 0.2592785358428955
       }
     },
     {
       "test": "Mock Provider Available",
       "success": true,
       "message": "Mock provider in chain: mock",
-      "elapsed_time": 0.9649438858032227,
-      "timestamp": 1763315491.9613829,
+      "elapsed_time": 1.2321250438690186,
+      "timestamp": 1763372343.9803293,
       "details": {
         "provider_order": [
           "mock"
@@ -68,8 +68,8 @@
       "test": "Fallback Selection",
       "success": true,
       "message": "Selected working provider: mock",
-      "elapsed_time": 0.9661290645599365,
-      "timestamp": 1763315491.962568,
+      "elapsed_time": 1.2327766418457031,
+      "timestamp": 1763372343.9809809,
       "details": {
         "selected_provider": "mock"
       }
@@ -78,10 +78,10 @@
       "test": "Timeout Protection",
       "success": true,
       "message": "Timeout handled correctly in 0.00s",
-      "elapsed_time": 0.9686329364776611,
-      "timestamp": 1763315491.9650729,
+      "elapsed_time": 1.234205722808838,
+      "timestamp": 1763372343.9824097,
       "details": {
-        "elapsed": 0.0011620521545410156,
+        "elapsed": 0.0005042552947998047,
         "provider": "mock"
       }
     },
@@ -89,8 +89,8 @@
       "test": "RAG Health Endpoint",
       "success": true,
       "message": "RAG health endpoint working",
-      "elapsed_time": 1.286614179611206,
-      "timestamp": 1763315492.2830532,
+      "elapsed_time": 1.7326200008392334,
+      "timestamp": 1763372344.4808245,
       "details": {
         "status": "healthy"
       }
@@ -99,8 +99,8 @@
       "test": "RAG Embedding Endpoint",
       "success": true,
       "message": "RAG embedding endpoint working",
-      "elapsed_time": 1.2896699905395508,
-      "timestamp": 1763315492.286109,
+      "elapsed_time": 1.739497423171997,
+      "timestamp": 1763372344.4877021,
       "details": {
         "dimensions": 1536
       }
@@ -109,28 +109,28 @@
       "test": "Single Embedding Performance",
       "success": true,
       "message": "Single embedding in 0.00s",
-      "elapsed_time": 1.2926380634307861,
-      "timestamp": 1763315492.289077,
+      "elapsed_time": 1.7438180446624756,
+      "timestamp": 1763372344.4920225,
       "details": {
-        "time": 0.0004558563232421875
+        "time": 0.0005373954772949219
       }
     },
     {
       "test": "Batch Embedding Performance",
       "success": true,
       "message": "Batch of 5 embeddings in 0.00s",
-      "elapsed_time": 1.2926559448242188,
-      "timestamp": 1763315492.289095,
+      "elapsed_time": 1.743926763534546,
+      "timestamp": 1763372344.4921315,
       "details": {
-        "time": 0.0019989013671875
+        "time": 0.002771139144897461
       }
     },
     {
       "test": "Metrics Collection",
       "success": true,
       "message": "Metrics available and tracking",
-      "elapsed_time": 1.2926599979400635,
-      "timestamp": 1763315492.289099,
+      "elapsed_time": 1.744027853012085,
+      "timestamp": 1763372344.4922326,
       "details": {
         "total_requests": 6
       }
@@ -139,24 +139,24 @@
       "test": "Production Check: No sentence-transformers",
       "success": false,
       "message": "sentence-transformers still available",
-      "elapsed_time": 5.357198238372803,
-      "timestamp": 1763315496.353638,
+      "elapsed_time": 10.84026551246643,
+      "timestamp": 1763372353.5884697,
       "details": {}
     },
     {
       "test": "Production Check: Stable Service Creation",
       "success": true,
       "message": "Service creates and closes properly",
-      "elapsed_time": 5.357212066650391,
-      "timestamp": 1763315496.353651,
+      "elapsed_time": 10.840399026870728,
+      "timestamp": 1763372353.588604,
       "details": {}
     },
     {
       "test": "Production Check: Error Handling",
       "success": true,
       "message": "Handles errors gracefully",
-      "elapsed_time": 5.35721492767334,
-      "timestamp": 1763315496.353654,
+      "elapsed_time": 10.840537786483765,
+      "timestamp": 1763372353.5887427,
       "details": {}
     }
   ],
@@ -164,8 +164,8 @@
     "Production Check: No sentence-transformers: sentence-transformers still available"
   ],
   "performance_metrics": {
-    "single_embedding_time": 0.0004558563232421875,
-    "batch_embedding_time": 0.0019989013671875,
+    "single_embedding_time": 0.0005373954772949219,
+    "batch_embedding_time": 0.002771139144897461,
     "batch_size": 5,
     "metrics": {
       "total_requests": 6,

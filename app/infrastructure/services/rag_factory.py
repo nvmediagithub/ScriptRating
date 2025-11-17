@@ -73,9 +73,15 @@ class RAGServiceFactory:
                 collection_name=config.qdrant_collection_name,
                 vector_size=config.qdrant_vector_size,
                 distance_metric=config.qdrant_distance_metric,
+                replication_factor=config.qdrant_replication_factor,
+                write_consistency_factor=config.qdrant_write_consistency_factor,
+                on_disk_payload=config.qdrant_on_disk_payload,
+                hnsw_config_m=config.qdrant_hnsw_config_m,
+                hnsw_config_ef_construct=config.qdrant_hnsw_config_ef_construct,
+                timeout=config.qdrant_timeout,
                 enable_tfidf_fallback=config.enable_tfidf_fallback,
             )
-            logger.info("VectorDatabaseService created")
+            logger.info("VectorDatabaseService created with Qdrant optimization settings")
         
         # Create RAG orchestrator if both services are available
         rag_orchestrator = None

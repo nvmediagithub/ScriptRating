@@ -6,6 +6,7 @@ import '../core/locator.dart';
 import '../models/analysis_result.dart';
 import '../models/document_type.dart';
 import '../services/api_service.dart';
+import '../models/rag_processing_details.dart';
 
 class DocumentUploadScreen extends StatefulWidget {
   const DocumentUploadScreen({super.key});
@@ -22,6 +23,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
   String? _criteriaDocumentId;
   String? _criteriaFilename;
   int? _criteriaChunks;
+  RagProcessingDetails? _ragProcessingDetails;
   String? _scriptFilename;
   String? _error;
 
@@ -72,14 +74,15 @@ Future<void> _handleUpload(DocumentType type) async {
       if (type == DocumentType.criteria) {
         setState(() {
           _criteriaFilename = filename;
-          _criteriaDocumentId = response['document_id'] as String;
-          _criteriaChunks = response['chunks_indexed'] as int?;
+          _criteriaDocumentId = response.documentId;
+          _criteriaChunks = response.chunksIndexed;
+          _ragProcessingDetails = response.ragProcessingDetails;
         });
       } else {
         _scriptFilename = filename;
         final AnalysisResult analysis =
             await _apiService.analyzeScript(
-          response['document_id'] as String,
+          response.documentId,
           criteriaDocumentId: _criteriaDocumentId,
         );
         if (!mounted) return;
@@ -100,6 +103,163 @@ Future<void> _handleUpload(DocumentType type) async {
         _uploadingScript = false;
       });
     }
+  }
+
+  Widget _buildCriteriaStatus() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.green),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Файл $_criteriaFilename загружен',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (_criteriaChunks != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Индексировано фрагментов: $_criteriaChunks',
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ),
+        if (_ragProcessingDetails != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Отчёт обработки RAG',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildProcessingMetric(
+                  'Фрагменты',
+                  '${_ragProcessingDetails!.chunksProcessed}/${_ragProcessingDetails!.totalChunks}',
+                  _ragProcessingDetails!.chunksProcessed == _ragProcessingDetails!.totalChunks
+                      ? Colors.green
+                      : Colors.orange,
+                ),
+                _buildProcessingMetric(
+                  'Генерация эмбеддингов',
+                  _ragProcessingDetails!.embeddingGenerationStatus == 'success'
+                      ? 'Успешно'
+                      : _ragProcessingDetails!.embeddingGenerationStatus == 'partial'
+                          ? 'Частично'
+                          : 'Ошибка',
+                  _ragProcessingDetails!.embeddingGenerationStatus == 'success'
+                      ? Colors.green
+                      : _ragProcessingDetails!.embeddingGenerationStatus == 'partial'
+                          ? Colors.orange
+                          : Colors.red,
+                ),
+                _buildProcessingMetric(
+                  'Индексация БД',
+                  _ragProcessingDetails!.vectorDbIndexingStatus == 'success'
+                      ? 'Успешно'
+                      : _ragProcessingDetails!.vectorDbIndexingStatus == 'partial'
+                          ? 'Частично'
+                          : 'Ошибка',
+                  _ragProcessingDetails!.vectorDbIndexingStatus == 'success'
+                      ? Colors.green
+                      : _ragProcessingDetails!.vectorDbIndexingStatus == 'partial'
+                          ? Colors.orange
+                          : Colors.red,
+                ),
+                if (_ragProcessingDetails!.embeddingModelUsed != null)
+                  _buildProcessingMetric(
+                    'Модель эмбеддингов',
+                    _ragProcessingDetails!.embeddingModelUsed!,
+                    Colors.blue,
+                  ),
+                if (_ragProcessingDetails!.indexingTimeMs != null)
+                  _buildProcessingMetric(
+                    'Время обработки',
+                    _ragProcessingDetails!.processingTimeFormatted,
+                    Colors.blue,
+                  ),
+                if (_ragProcessingDetails!.hasErrors)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Ошибки обработки:',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        ..._ragProcessingDetails!.processingErrors!.map(
+                          (error) => Text(
+                            '• $error',
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildProcessingMetric(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 12,
+                color: color,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildUploadCard({
@@ -203,33 +363,7 @@ Future<void> _handleUpload(DocumentType type) async {
               onPressed: () => _handleUpload(DocumentType.criteria),
               status: _criteriaDocumentId == null
                   ? null
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.check_circle, color: Colors.green),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Файл $_criteriaFilename загружен',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (_criteriaChunks != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              'Индексировано фрагментов: $_criteriaChunks',
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                          ),
-                      ],
-                    ),
+                  : _buildCriteriaStatus(),
             ),
             _buildUploadCard(
               icon: Icons.movie_filter_outlined,

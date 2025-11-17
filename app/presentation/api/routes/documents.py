@@ -20,11 +20,47 @@ from app.infrastructure.services.runtime_context import (
     knowledge_base,
     script_store,
 )
-from app.presentation.api.schemas import DocumentType, DocumentUploadResponse, ErrorDetail
+from app.presentation.api.schemas import DocumentType, DocumentUploadResponse, DocumentProcessingStatus, RAGProcessingDetails, ErrorDetail
 
 router = APIRouter()
 
 _DOCUMENT_REGISTRY: Dict[str, Dict[str, object]] = {}
+
+
+class DocumentProcessingRegistry:
+    """Registry for tracking document processing status and details."""
+
+    def __init__(self):
+        self._processing_status: Dict[str, Dict[str, object]] = {}
+
+    def register_processing_start(self, document_id: str, uploaded_at: datetime) -> None:
+        """Mark document processing as started."""
+        self._processing_status[document_id] = {
+            "status": "indexing",
+            "processing_started_at": datetime.utcnow(),
+            "processing_completed_at": None,
+            "rag_processing_details": None,
+            "error_message": None,
+        }
+
+    def update_processing_result(self, document_id: str, rag_processing_details: Optional[RAGProcessingDetails], error: Optional[str] = None) -> None:
+        """Update document processing result."""
+        if document_id not in self._processing_status:
+            return
+
+        status = self._processing_status[document_id]
+        status["status"] = "completed" if error is None else "failed"
+        status["processing_completed_at"] = datetime.utcnow()
+        status["rag_processing_details"] = rag_processing_details
+        status["error_message"] = error
+
+    def get_processing_status(self, document_id: str) -> Optional[Dict[str, object]]:
+        """Get processing status for a document."""
+        return self._processing_status.get(document_id)
+
+
+# Global processing registry
+_processing_registry = DocumentProcessingRegistry()
 
 
 def _ensure_storage_dir() -> Path:
@@ -98,11 +134,88 @@ async def upload_document(
 
     if document_type == DocumentType.CRITERIA:
         paragraph_details = parsed_document.metadata.get("paragraph_details", [])
-        await knowledge_base.ingest_document(
-            document_id=document_id,
-            document_title=parsed_document.filename,
-            paragraph_details=paragraph_details,
-        )
+        rag_processing_details = None
+
+        # Mark processing as started
+        _processing_registry.register_processing_start(document_id, uploaded_at)
+
+        # Try to ingest into knowledge base with RAG processing
+        try:
+            if hasattr(knowledge_base, '_rag_orchestrator') and knowledge_base._rag_orchestrator:
+                # Use RAG orchestrator for detailed processing
+                from app.domain.services.rag_orchestrator import RAGDocument
+
+                # Convert paragraph details to RAG documents
+                rag_documents = []
+                for detail in paragraph_details:
+                    if detail.get("text", "").strip():
+                        rag_doc = RAGDocument(
+                            id=f"{document_id}_{len(rag_documents)}",
+                            text=detail.get("text", "").strip(),
+                            metadata={
+                                "document_id": document_id,
+                                "document_title": parsed_document.filename,
+                                "page": detail.get("page", 1),
+                                "paragraph_index": detail.get("paragraph_index", len(rag_documents) + 1),
+                                **{k: v for k, v in detail.items() if k not in {"text", "page", "paragraph_index"}}
+                            },
+                        )
+                        rag_documents.append(rag_doc)
+
+                # Index with RAG and get detailed results
+                indexing_result = await knowledge_base._rag_orchestrator.index_documents_batch(
+                    rag_documents,
+                    wait_for_indexing=True
+                )
+
+                # Convert to response format
+                rag_processing_details = RAGProcessingDetails(
+                    total_chunks=indexing_result.total_chunks,
+                    chunks_processed=indexing_result.chunks_processed,
+                    embedding_generation_status=indexing_result.embedding_generation_status,
+                    embedding_model_used=indexing_result.embedding_model_used,
+                    vector_db_indexing_status=indexing_result.vector_db_indexing_status,
+                    documents_indexed=indexing_result.documents_indexed,
+                    indexing_time_ms=indexing_result.indexing_time_ms,
+                    processing_errors=indexing_result.processing_errors if indexing_result.processing_errors else None,
+                )
+
+                # Update processing status
+                _processing_registry.update_processing_result(document_id, rag_processing_details)
+
+                # Also sync to legacy knowledge base for backward compatibility
+                await knowledge_base.ingest_document(
+                    document_id=document_id,
+                    document_title=parsed_document.filename,
+                    paragraph_details=paragraph_details,
+                )
+            else:
+                # Fallback to legacy knowledge base only
+                await knowledge_base.ingest_document(
+                    document_id=document_id,
+                    document_title=parsed_document.filename,
+                    paragraph_details=paragraph_details,
+                )
+
+                # Update processing status for legacy indexing
+                _processing_registry.update_processing_result(document_id, None)
+
+        except Exception as e:
+            # Log error and update processing status
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"RAG processing failed, falling back to legacy indexing: {e}")
+
+            # Update processing status with error
+            _processing_registry.update_processing_result(document_id, None, str(e))
+
+            # Ensure legacy indexing happens even if RAG fails
+            await knowledge_base.ingest_document(
+                document_id=document_id,
+                document_title=parsed_document.filename,
+                paragraph_details=paragraph_details,
+            )
+
         chunks_indexed = len(paragraph_details)
         status = "indexed"
     else:
@@ -134,7 +247,55 @@ async def upload_document(
         uploaded_at=uploaded_at,
         document_type=document_type,
         chunks_indexed=chunks_indexed,
+        rag_processing_details=rag_processing_details,
         status=status,
+    )
+
+
+@router.get(
+    "/{document_id}/status",
+    summary="Get document processing status and details",
+    description="Retrieve detailed processing status and RAG processing reports for an uploaded document.",
+    response_model=DocumentProcessingStatus,
+)
+async def get_document_processing_status(document_id: str) -> DocumentProcessingStatus:
+    """Return detailed processing status and RAG details for a document."""
+    if document_id not in _DOCUMENT_REGISTRY:
+        raise HTTPException(
+            status_code=404,
+            detail=ErrorDetail(
+                code="DOCUMENT_NOT_FOUND",
+                message=f"Document with ID {document_id} not found",
+            ).dict(),
+        )
+
+    doc = _DOCUMENT_REGISTRY[document_id]
+    processing_status = _processing_registry.get_processing_status(document_id)
+
+    # For criteria documents, try to get processing details
+    rag_processing_details = None
+    processing_started_at = None
+    processing_completed_at = None
+    error_message = None
+    current_status = doc["status"]
+
+    if processing_status:
+        rag_processing_details = processing_status.get("rag_processing_details")
+        processing_started_at = processing_status.get("processing_started_at")
+        processing_completed_at = processing_status.get("processing_completed_at")
+        error_message = processing_status.get("error_message")
+        current_status = processing_status.get("status", current_status)
+
+    return DocumentProcessingStatus(
+        document_id=doc["document_id"],
+        filename=doc["filename"],
+        document_type=doc["document_type"],
+        status=current_status,
+        uploaded_at=doc["uploaded_at"],
+        processing_started_at=processing_started_at,
+        processing_completed_at=processing_completed_at,
+        rag_processing_details=rag_processing_details,
+        error_message=error_message,
     )
 
 

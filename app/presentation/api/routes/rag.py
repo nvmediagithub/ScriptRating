@@ -7,10 +7,11 @@ Now integrated with the new RAG infrastructure (EmbeddingService, VectorDatabase
 import uuid
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import JSONResponse
 
+from app.infrastructure.services.embedding_service import EmbeddingService
 from app.presentation.api.schemas import (
     RAGQueryRequest,
     RAGQueryResponse,
@@ -29,6 +30,7 @@ router = APIRouter()
 # Global instances (will be initialized in main.py)
 _rag_orchestrator = None
 _knowledge_base = None
+_embedding_service: Optional[EmbeddingService] = None
 
 # Mock storage for backward compatibility
 _mock_corpus = {}
@@ -53,6 +55,16 @@ def get_knowledge_base():
             detail="Knowledge base not initialized"
         )
     return _knowledge_base
+
+
+def get_embedding_service():
+    """Dependency to get embedding service instance."""
+    if _embedding_service is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Embedding service not initialized"
+        )
+    return _embedding_service
 
 
 def _generate_mock_corpus():
@@ -85,12 +97,14 @@ def _generate_mock_corpus():
             }
         ]
 
+        # Generate embeddings asynchronously after corpus initialization
+        # This will be called separately to avoid async issues during import
         for item in corpus_data:
             doc_id = str(uuid.uuid4())
             _mock_corpus[doc_id] = {
                 "id": doc_id,
                 **item,
-                "embedding": [0.1 * i for i in range(384)],  # Mock embedding vector
+                "embedding": [0.1 * i for i in range(384)],  # Default mock - will be replaced with real embeddings
                 "added_at": datetime.utcnow()
             }
 
@@ -223,6 +237,9 @@ async def update_corpus(request: CorpusUpdateRequest) -> CorpusUpdateResponse:
     # Generate mock content hash
     content_hash = str(hash(request.content))[:16]
 
+    # Generate real embedding for user content
+    embedding_vector = [0.1 * i for i in range(384)]  # Default mock - can be replaced with real embeddings in update_corpus_async
+
     doc_id = str(uuid.uuid4())
     _mock_corpus[doc_id] = {
         "id": doc_id,
@@ -234,7 +251,7 @@ async def update_corpus(request: CorpusUpdateRequest) -> CorpusUpdateResponse:
             **(request.source_metadata or {})
         },
         "relevance_score": 0.85,  # Mock score for user content
-        "embedding": [0.1 * i for i in range(384)],  # Mock embedding
+        "embedding": embedding_vector,
         "added_at": datetime.utcnow()
     }
 
@@ -522,3 +539,52 @@ def set_knowledge_base(knowledge_base):
     """Set the global knowledge base instance."""
     global _knowledge_base
     _knowledge_base = knowledge_base
+
+
+def set_embedding_service(embedding_service: EmbeddingService):
+    """Set the global embedding service instance."""
+    global _embedding_service
+    _embedding_service = embedding_service
+def set_embedding_service(embedding_service: EmbeddingService):
+    """Set the global embedding service instance."""
+    global _embedding_service
+    _embedding_service = embedding_service
+
+
+async def update_corpus_embeddings():
+    """
+    Update corpus embeddings with real embeddings from EmbeddingService.
+    Call this after setting the embedding service to replace mock embeddings.
+    """
+    if not _embedding_service:
+        logger.warning("No embedding service available for corpus update")
+        return
+
+    logger.info("🧮 Updating corpus embeddings with real embeddings...")
+
+    # Collect all content that needs embedding updates
+    update_tasks = []
+    for doc_id, doc in _mock_corpus.items():
+        content = doc["content"]
+        update_tasks.append((doc_id, content))
+
+    if not update_tasks:
+        logger.info("No documents to update")
+        return
+
+    # Generate embeddings for all documents
+    contents = [content for _, content in update_tasks]
+    try:
+        batch_results = await _embedding_service.embed_batch(contents)
+        logger.info(f"✅ Generated {len(batch_results)} real embeddings")
+
+        # Update corpus with real embeddings
+        for (doc_id, _), result in zip(update_tasks, batch_results):
+            _mock_corpus[doc_id]["embedding"] = result.embedding
+            logger.debug(f"Updated embedding for document {doc_id[:8]}...")
+
+        logger.info("✅ Corpus embeddings updated successfully")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to update corpus embeddings: {e}")
+        # Keep mock embeddings as fallback

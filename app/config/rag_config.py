@@ -83,7 +83,7 @@ class RAGConfig(BaseSettings):
         description="Qdrant API key"
     )
     qdrant_collection_name: str = Field(
-        default="scriptrating_documents",
+        default="script_rating_rag",
         alias="QDRANT_COLLECTION_NAME",
         description="Qdrant collection name"
     )
@@ -96,6 +96,36 @@ class RAGConfig(BaseSettings):
         default="Cosine",
         alias="QDRANT_DISTANCE_METRIC",
         description="Distance metric (Cosine, Euclid, Dot)"
+    )
+    qdrant_replication_factor: int = Field(
+        default=1,
+        alias="QDRANT_REPLICATION_FACTOR",
+        description="Replication factor"
+    )
+    qdrant_write_consistency_factor: int = Field(
+        default=1,
+        alias="QDRANT_WRITE_CONSISTENCY_FACTOR",
+        description="Write consistency factor"
+    )
+    qdrant_on_disk_payload: bool = Field(
+        default=True,
+        alias="QDRANT_ON_DISK_PAYLOAD",
+        description="Store payload on disk"
+    )
+    qdrant_hnsw_config_m: int = Field(
+        default=16,
+        alias="QDRANT_HNSW_CONFIG_M",
+        description="HNSW M parameter"
+    )
+    qdrant_hnsw_config_ef_construct: int = Field(
+        default=100,
+        alias="QDRANT_HNSW_CONFIG_EF_CONSTRUCT",
+        description="HNSW ef_construct parameter"
+    )
+    qdrant_timeout: int = Field(
+        default=30,
+        alias="QDRANT_TIMEOUT",
+        description="Qdrant request timeout"
     )
     
     # RAG Features

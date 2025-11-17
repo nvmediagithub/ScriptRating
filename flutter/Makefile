@@ -1,4 +1,4 @@
-.PHONY: help clean get analyze format build run test build-apk build-ios
+.PHONY: help clean get analyze format build run run-web test build-apk build-ios build-runner watch
 
 help: ## Show this help message
 	@echo 'Flutter Development Commands:'
@@ -24,6 +24,9 @@ build: ## Build for current platform
 run: ## Run in development mode
 	flutter run
 
+run-web: ## Run web application on port 3000
+	flutter run -d chrome --web-port=3000
+
 test: ## Run tests
 	flutter test
 
@@ -35,6 +38,3 @@ build-ios: ## Build iOS app
 
 build-runner: ## Run build runner for code generation
 	flutter pub run build_runner build --delete-conflicting-outputs
-
-watch: ## Watch for changes and rebuild
-	flutter pub run build_runner watch

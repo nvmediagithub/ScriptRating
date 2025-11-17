@@ -45,6 +45,18 @@ class DocumentUploadRequest(BaseModel):
     file_size: int = Field(..., description="Size of the file in bytes")
 
 
+class RAGProcessingDetails(BaseModel):
+    """Detailed RAG processing information for criteria documents."""
+    total_chunks: int = Field(..., description="Total number of text chunks created")
+    chunks_processed: int = Field(..., description="Number of chunks successfully processed")
+    embedding_generation_status: str = Field(..., description="Status of embedding generation (success/failed/partial)")
+    embedding_model_used: Optional[str] = Field(None, description="Embedding model name used")
+    vector_db_indexing_status: str = Field(..., description="Status of vector database indexing (success/failed/partial)")
+    documents_indexed: int = Field(..., description="Number of documents indexed in vector database")
+    indexing_time_ms: Optional[float] = Field(None, description="Time taken for indexing in milliseconds")
+    processing_errors: Optional[List[str]] = Field(None, description="Any processing errors encountered")
+
+
 class DocumentUploadResponse(BaseModel):
     """Response model for successful document upload."""
     document_id: str = Field(..., description="Unique identifier for the uploaded document")
@@ -52,7 +64,21 @@ class DocumentUploadResponse(BaseModel):
     uploaded_at: datetime = Field(..., description="Timestamp of upload")
     document_type: DocumentType = Field(..., description="Type of uploaded document (script or criteria)")
     chunks_indexed: Optional[int] = Field(None, description="Number of knowledge chunks indexed for criteria documents")
+    rag_processing_details: Optional[RAGProcessingDetails] = Field(None, description="Detailed RAG processing information for criteria documents")
     status: str = Field(default="uploaded", description="Upload status")
+
+
+class DocumentProcessingStatus(BaseModel):
+    """Response model for document processing status and details."""
+    document_id: str = Field(..., description="Unique identifier for the document")
+    filename: str = Field(..., description="Name of the uploaded file")
+    document_type: DocumentType = Field(..., description="Type of document (script or criteria)")
+    status: str = Field(..., description="Processing status (uploaded/indexing/completed/failed)")
+    uploaded_at: datetime = Field(..., description="Timestamp of upload")
+    processing_started_at: Optional[datetime] = Field(None, description="Timestamp when processing started")
+    processing_completed_at: Optional[datetime] = Field(None, description="Timestamp when processing completed")
+    rag_processing_details: Optional[RAGProcessingDetails] = Field(None, description="Detailed RAG processing information for criteria documents")
+    error_message: Optional[str] = Field(None, description="Error message if processing failed")
 
 
 class NormativeReference(BaseModel):

@@ -1,0 +1,58 @@
+log_level: INFO
+
+storage:
+  storage_path: ./storage
+  snapshots_path: ./snapshots
+  temp_path: ./temp
+  snapshots_config:
+    snapshots_path: ./snapshots
+    snapshot_persistence: AlwaysCreate
+  performance:
+    max_search_threads: 4
+    max_optimization_threads: 2
+    optimizer_cpu_budget: 0
+    update_concurrency: 8
+    search_timeout_sec: 60
+    indexing_threshold: 20000
+    memmap_threshold: 100000
+    default_segment_number: 2
+    payload_mmap_threshold: 10000
+  hnsw_config:
+    m: 16
+    ef_construct: 100
+    full_scan_threshold: 10000
+    max_indexing_threads: 0
+    on_disk: false
+    payload_m: null
+  wal:
+    wal_capacity_mb: 32
+    wal_segments_ahead: 0
+  quantization_config:
+    scalar:
+      type: int8
+      quantile: 0.99
+      always_ram: true
+
+service:
+  http_port: 6333
+  grpc_port: 6334
+  max_request_size_mb: 32
+  max_workers: 0
+  enable_cors: true
+  enable_tls: false
+  api_key: null
+  read_only_api_key: null
+
+cluster:
+  enabled: false
+  p2p:
+    port: 6335
+  consensus:
+    tick_period_ms: 100
+    bootstrap_timeout_sec: 10
+    max_message_queue_size: 1000
+    grpc_timeout_ms: 1000
+    propose_batch_timeout_ms: 200
+  grpc_timeout_ms: 1000
+
+telemetry_disabled: true
