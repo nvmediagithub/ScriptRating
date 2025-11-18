@@ -33,7 +33,10 @@ dependencies = [
     # RAG System Dependencies
     "openai>=1.3.0",
     "qdrant-client>=1.7.0",
-    # sentence-transformers removed - using OpenRouter for embeddings instead
+    "sentence-transformers>=2.2.0",
+    "transformers>=4.30.0",
+    "torch>=2.0.0",
+    "accelerate>=0.20.0",
     "tenacity>=8.2.0",
     "numpy>=1.24.0",
 ]

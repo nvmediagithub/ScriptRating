@@ -37,33 +37,33 @@ class RAGServiceFactory:
     ]:
         """
         Create all RAG services based on configuration.
-        
+
         Args:
             config: Optional RAG configuration (uses default if None)
-            
+
         Returns:
             Tuple of (EmbeddingService, VectorDatabaseService, RAGOrchestrator, KnowledgeBase)
         """
         if config is None:
             config = get_rag_config()
-        
+
         logger.info("Creating RAG services...")
-        
+        logger.info(f"Config: rag_enabled={config.is_rag_enabled()}, vector_db_enabled={config.is_vector_db_enabled()}, enable_rag_system={config.enable_rag_system}")
+
         # Create embedding service if enabled
         embedding_service = None
         if config.is_rag_enabled():
             embedding_config = config.get_embedding_config()
             embedding_service = EmbeddingService(
-                openrouter_api_key=embedding_config["openrouter_api_key"],
-                openai_api_key=embedding_config["openai_api_key"],
                 redis_url=embedding_config["redis_url"],
                 cache_ttl=embedding_config["cache_ttl"],
                 batch_size=embedding_config["batch_size"],
                 embedding_timeout=embedding_config["embedding_timeout"],
                 primary_provider=embedding_config["primary_provider"],
+                local_model=embedding_config["local_model"],
             )
-            logger.info("✅ EmbeddingService created with OpenRouter integration")
-        
+            logger.info(f"✅ EmbeddingService created: {embedding_service is not None}, type: {type(embedding_service).__name__ if embedding_service else 'None'}")
+
         # Create vector database service if enabled
         vector_db_service = None
         if config.is_vector_db_enabled():
@@ -81,8 +81,8 @@ class RAGServiceFactory:
                 timeout=config.qdrant_timeout,
                 enable_tfidf_fallback=config.enable_tfidf_fallback,
             )
-            logger.info("VectorDatabaseService created with Qdrant optimization settings")
-        
+            logger.info(f"✅ VectorDatabaseService created: {vector_db_service is not None}")
+
         # Create RAG orchestrator if both services are available
         rag_orchestrator = None
         if embedding_service and vector_db_service:
@@ -92,21 +92,29 @@ class RAGServiceFactory:
                 enable_hybrid_search=config.enable_hybrid_search,
                 search_timeout=config.rag_search_timeout,
             )
-            logger.info("RAGOrchestrator created")
-        
+            logger.info(f"✅ RAGOrchestrator created: {rag_orchestrator is not None}")
+        else:
+            logger.warning(f"RAGOrchestrator not created - embedding_service: {embedding_service is not None}, vector_db_service: {vector_db_service is not None}")
+
         # Create knowledge base with optional RAG integration
         knowledge_base = KnowledgeBase(
             rag_orchestrator=rag_orchestrator,
             use_rag_when_available=config.enable_rag_system,
         )
-        logger.info("KnowledgeBase created")
-        
+        logger.info(f"✅ KnowledgeBase created: {knowledge_base is not None}")
+
+        # Diagnostic: Check if RAG orchestrator is properly attached
+        if knowledge_base:
+            logger.info(f"KnowledgeBase._rag_orchestrator: {getattr(knowledge_base, '_rag_orchestrator', 'MISSING')}")
+            if hasattr(knowledge_base, '_rag_orchestrator'):
+                logger.info(f"KnowledgeBase._rag_orchestrator is None: {knowledge_base._rag_orchestrator is None}")
+
         # Store references
         cls._embedding_service = embedding_service
         cls._vector_db_service = vector_db_service
         cls._rag_orchestrator = rag_orchestrator
         cls._knowledge_base = knowledge_base
-        
+
         return embedding_service, vector_db_service, rag_orchestrator, knowledge_base
     
     @classmethod
@@ -142,8 +150,8 @@ class RAGServiceFactory:
                 logger.info("VectorDatabaseService initialized")
             
             if rag_orchestrator:
-                # Services already initialized, just mark orchestrator
-                rag_orchestrator._initialized = True
+                # Initialize the orchestrator (services are already initialized above)
+                await rag_orchestrator.initialize()
                 logger.info("RAGOrchestrator initialized")
             
             if knowledge_base:

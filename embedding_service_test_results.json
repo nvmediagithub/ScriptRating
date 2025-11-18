@@ -1,0 +1,47 @@
+{
+  "architecture": {
+    "architecture_test": "success",
+    "providers_available": 2,
+    "fallback_chain_length": 2,
+    "single_embedding_success": true,
+    "batch_embedding_success": true,
+    "metrics": {
+      "total_requests": 5,
+      "cache_hits": 0,
+      "cache_misses": 0,
+      "provider_usage": {
+        "openai": 0,
+        "openrouter": 0,
+        "local": 0,
+        "huggingface": 0,
+        "mock": 5
+      },
+      "errors": 0,
+      "cache_hit_rate": 0.0,
+      "available_providers": [
+        "local",
+        "mock"
+      ],
+      "primary_provider": "mock",
+      "fallback_chain_length": 2
+    }
+  },
+  "caching": {
+    "redis_test": "failed",
+    "error": "name 'EmbeddingService' is not defined"
+  },
+  "fallback": {
+    "fallback_test": "failed",
+    "error": "name 'EmbeddingService' is not defined"
+  },
+  "api": {
+    "api_test": "attempted",
+    "server_available": false
+  },
+  "performance": {
+    "performance_test": "success",
+    "single_embedding_time": 0.00021557807922363282,
+    "batch_embedding_time": 4.953145980834961e-05,
+    "requests_processed": 30
+  }
+}

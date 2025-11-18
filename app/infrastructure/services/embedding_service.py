@@ -1,18 +1,17 @@
 """
-Stable Embedding Service with focus on free solutions and critical fixes.
+Stable Embedding Service with focus on local models and critical fixes.
 
 Key improvements:
-1. OpenRouter as primary provider (free embeddings)
-2. NO local models to prevent blocking/hanging
+1. Local Sentence Transformers as primary provider (free, private, fast)
+2. Mock fallback for development/testing
 3. Comprehensive timeouts for all operations
 4. Graceful degradation and fallback
 5. Simple, stable architecture
 
 Critical fixes:
-- Removed sentence-transformers dependencies
 - All operations have timeout protection
 - No blocking event loop operations
-- Focus on OpenRouter free embeddings
+- Focus on local, private embeddings
 """
 
 from __future__ import annotations
@@ -28,6 +27,8 @@ import os
 
 import httpx
 import redis.asyncio as aioredis
+from sentence_transformers import SentenceTransformer
+import torch
 
 logger = logging.getLogger(__name__)
 
@@ -76,93 +77,6 @@ class StableEmbeddingProvider:
         return {"name": "Unknown", "dimensions": 0, "provider": "unknown"}
 
 
-class OpenRouterProvider(StableEmbeddingProvider):
-    """
-    OpenRouter provider - PRIMARY SOLUTION (free embeddings).
-    
-    Free models available:
-    - openai/text-embedding-3-small
-    - openai/text-embedding-3-large
-    - cohere/embed-multilingual-v3.0
-    """
-    
-    def __init__(self, api_key: Optional[str] = None, timeout: float = 10.0):
-        super().__init__(timeout)
-        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
-        self.base_url = "https://openrouter.ai/api/v1"
-        self._http_client = None
-        
-        # Free embedding models prioritized by quality
-        self.models = [
-            "openai/text-embedding-3-large",  # Best quality, free
-            "openai/text-embedding-3-small",  # Fast, free
-            "cohere/embed-multilingual-v3.0", # Multilingual, free
-        ]
-        
-        if not self.api_key:
-            logger.warning("OpenRouter API key not provided - provider will be disabled")
-    
-    async def _ensure_client(self):
-        """Ensure HTTP client is initialized."""
-        if not self._http_client and self.api_key:
-            self._http_client = httpx.AsyncClient(
-                base_url=self.base_url,
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://scriptrating.com",
-                    "X-Title": "ScriptRating"
-                },
-                timeout=self.timeout,
-            )
-    
-    async def _embed_impl(self, texts: List[str]) -> List[List[float]]:
-        """Generate embeddings using OpenRouter API."""
-        if not self.api_key:
-            raise ValueError("OpenRouter API key not configured")
-        
-        await self._ensure_client()
-        
-        # Try models in order of preference
-        for model in self.models:
-            try:
-                logger.info(f"Trying OpenRouter model: {model}")
-                
-                response = await self._http_client.post(
-                    "/embeddings",
-                    json={
-                        "model": model,
-                        "input": texts,
-                        "encoding_format": "float",
-                    },
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    embeddings = [item["embedding"] for item in data["data"]]
-                    logger.info(f"✅ OpenRouter {model}: {len(embeddings)} embeddings generated")
-                    return embeddings
-                elif response.status_code in [400, 404]:
-                    logger.warning(f"Model {model} not available, trying next")
-                    continue
-                else:
-                    response.raise_for_status()
-                    
-            except Exception as e:
-                logger.warning(f"❌ OpenRouter {model} failed: {e}")
-                continue
-        
-        raise Exception("All OpenRouter models failed")
-    
-    def get_info(self) -> Dict[str, Any]:
-        return {
-            "name": "OpenRouter-Embeddings",
-            "dimensions": 1536,  # Standard for most models
-            "provider": "openrouter",
-            "available_models": self.models,
-            "free": True,
-            "api_key_configured": bool(self.api_key)
-        }
 
 
 class MockProvider(StableEmbeddingProvider):
@@ -207,10 +121,10 @@ class MockProvider(StableEmbeddingProvider):
 
 class EmbeddingService:
     """
-    Stable Embedding Service with focus on free solutions.
-    
+    Stable Embedding Service with focus on local models.
+
     Primary features:
-    1. OpenRouter as main provider (free embeddings)
+    1. Local Sentence Transformers as main provider (free, private, fast)
     2. Mock fallback for development
     3. Redis caching for performance
     4. Comprehensive timeout protection
@@ -219,33 +133,35 @@ class EmbeddingService:
     
     def __init__(
         self,
-        openrouter_api_key: Optional[str] = None,
-        openai_api_key: Optional[str] = None,
         redis_url: Optional[str] = None,
         cache_ttl: int = 86400 * 7,  # 7 days
         batch_size: int = 50,  # Conservative batch size
         embedding_timeout: float = 10.0,
-        primary_provider: str = "openrouter",  # Changed from "openai" to "openrouter"
+        primary_provider: str = "local",
+        local_model: str = "all-MiniLM-L6-v2",
     ):
         """
         Initialize Stable Embedding Service.
-        
+
         Args:
-            openrouter_api_key: OpenRouter API key (get free at openrouter.ai)
-            openai_api_key: OpenAI API key (fallback option)
             redis_url: Redis connection for caching
             cache_ttl: Cache TTL in seconds
             batch_size: Batch size for processing
             embedding_timeout: Timeout for embedding operations
-            primary_provider: Primary provider ("openrouter", "openai", or "mock")
+            primary_provider: Primary provider ("local" or "mock")
         """
-        self.openrouter_api_key = openrouter_api_key
-        self.openai_api_key = openai_api_key
         self.redis_url = redis_url
         self.cache_ttl = cache_ttl
         self.batch_size = batch_size
         self.embedding_timeout = embedding_timeout
         self.primary_provider = primary_provider
+        self.local_model = local_model
+        self.redis_url = redis_url
+        self.cache_ttl = cache_ttl
+        self.batch_size = batch_size
+        self.embedding_timeout = embedding_timeout
+        self.primary_provider = primary_provider
+        self.local_model = local_model
         
         self._redis_client: Optional[aioredis.Redis] = None
         self._providers: Dict[str, StableEmbeddingProvider] = {}
@@ -253,53 +169,42 @@ class EmbeddingService:
         
         # Initialize providers
         self._setup_providers()
-        
+
         # Metrics
         self._metrics = {
             "total_requests": 0,
             "cache_hits": 0,
             "cache_misses": 0,
-            "provider_usage": {
-                "openrouter": 0,
-                "openai": 0,
-                "mock": 0
-            },
+            "provider_usage": {},
             "errors": 0,
             "timeouts": 0,
         }
+
+        # Initialize provider usage counters for all providers
+        for provider_name in self._providers.keys():
+            self._metrics["provider_usage"][provider_name] = 0
     
     def _setup_providers(self):
-        """Setup providers in order of preference."""
-        # Primary: OpenRouter (free embeddings)
-        if self.openrouter_api_key or os.getenv("OPENROUTER_API_KEY"):
-            self._providers["openrouter"] = OpenRouterProvider(
-                self.openrouter_api_key or os.getenv("OPENROUTER_API_KEY"),
-                timeout=self.embedding_timeout
-            )
-            self._provider_order.append("openrouter")
-            logger.info("✅ OpenRouter provider configured (free embeddings)")
-        
-        # Fallback: OpenAI (if key provided)
-        if self.openai_api_key or os.getenv("OPENAI_EMBEDDING_API_KEY"):
-            # For backward compatibility, we'll create a simple OpenAI provider
-            self._providers["openai"] = OpenAIReturnProvider(
-                self.openai_api_key or os.getenv("OPENAI_EMBEDDING_API_KEY"),
-                timeout=self.embedding_timeout
-            )
-            self._provider_order.append("openai")
-            logger.info("✅ OpenAI provider configured (fallback)")
-        
-        # Final fallback: Mock provider (always available)
+        """Setup providers in LOCAL-FIRST order of preference."""
+        # PRIMARY: Local Sentence Transformers (free, fast, private, NO API KEY NEEDED)
+        if self.primary_provider == "local" or self.local_model:
+            try:
+                self._providers["local"] = LocalSentenceTransformerProvider(
+                    model_name=self.local_model,
+                    timeout=self.embedding_timeout
+                )
+                self._provider_order.append("local")
+                logger.info(f"✅ LOCAL provider configured ({self.local_model}) - PRIMARY CHOICE")
+            except Exception as e:
+                logger.warning(f"❌ Failed to initialize local provider: {e}")
+
+
+        # FINAL FALLBACK: Mock provider (always available, no dependencies)
         self._providers["mock"] = MockProvider(timeout=1.0)
         self._provider_order.append("mock")
-        
-        # Adjust order based on primary provider preference
-        if self.primary_provider in self._providers:
-            # Move primary provider to the front
-            self._provider_order.remove(self.primary_provider)
-            self._provider_order.insert(0, self.primary_provider)
-        
-        logger.info(f"🔧 Configured providers in order: {self._provider_order}")
+        logger.info("✅ Mock provider configured (always available fallback)")
+
+        logger.info(f"🔧 LOCAL-ONLY provider order: {self._provider_order}")
     
     async def initialize(self) -> None:
         """Initialize service connections."""
@@ -375,15 +280,15 @@ class EmbeddingService:
     async def embed_text(self, text: str) -> EmbeddingResult:
         """
         Generate embedding for single text with timeout protection.
-        
+
         Args:
             text: Text to embed
-            
+
         Returns:
             EmbeddingResult with embedding vector and metadata
         """
         self._metrics["total_requests"] += 1
-        
+
         # Check cache first
         for provider_name in self._provider_order:
             cached_embedding = await self._get_from_cache(text, provider_name)
@@ -395,28 +300,28 @@ class EmbeddingService:
                     provider=provider_name,
                     cached=True,
                 )
-        
+
         # Generate new embedding with fallback
         last_error = None
         for provider_name in self._provider_order:
             try:
                 provider = self._providers[provider_name]
-                
+
                 logger.info(f"🔄 Generating embedding with {provider_name}...")
                 start_time = time.time()
-                
+
                 embeddings = await provider.embed_with_timeout([text])
                 embedding = embeddings[0]
-                
+
                 elapsed = time.time() - start_time
                 logger.info(f"✅ {provider_name} completed in {elapsed:.2f}s")
-                
+
                 # Cache the result
                 await self._store_in_cache(text, embedding, provider_name)
-                
+
                 # Update metrics
                 self._metrics["provider_usage"][provider_name] += 1
-                
+
                 return EmbeddingResult(
                     text=text,
                     embedding=embedding,
@@ -424,7 +329,7 @@ class EmbeddingService:
                     provider=provider_name,
                     cached=False,
                 )
-                
+
             except asyncio.TimeoutError:
                 self._metrics["timeouts"] += 1
                 last_error = f"Timeout after {self.embedding_timeout}s"
@@ -433,17 +338,21 @@ class EmbeddingService:
             except Exception as e:
                 last_error = str(e)
                 logger.warning(f"❌ {provider_name} failed: {e}")
+                # Skip the local provider completely if it fails
+                if provider_name == "local":
+                    logger.warning("⚠️ Skipping local provider due to error, trying next provider")
+                    continue
                 continue
-        
+
         # All providers failed - use mock as absolute fallback
         self._metrics["errors"] += 1
         self._metrics["provider_usage"]["mock"] += 1
-        
+
         mock_provider = self._providers["mock"]
         mock_embedding = await mock_provider.embed_with_timeout([text])[0]
-        
+
         logger.warning("⚠️ Using mock fallback - all real providers failed")
-        
+
         return EmbeddingResult(
             text=text,
             embedding=mock_embedding,
@@ -456,26 +365,26 @@ class EmbeddingService:
     async def embed_batch(self, texts: List[str]) -> List[EmbeddingResult]:
         """
         Generate embeddings for multiple texts in batches.
-        
+
         Args:
             texts: List of texts to embed
-            
+
         Returns:
             List of EmbeddingResult objects
         """
         if not texts:
             return []
-        
+
         results: List[EmbeddingResult] = []
-        
+
         # Process in smaller batches for stability
         for i in range(0, len(texts), self.batch_size):
             batch = texts[i:i + self.batch_size]
-            
+
             # Check cache for each text
             batch_results = []
             uncached_texts = []
-            
+
             for text in batch:
                 # Check cache across providers
                 found_cached = False
@@ -493,10 +402,10 @@ class EmbeddingService:
                         )
                         found_cached = True
                         break
-                
+
                 if not found_cached:
                     uncached_texts.append(text)
-            
+
             # Generate embeddings for uncached texts
             if uncached_texts:
                 # Try providers in order
@@ -505,7 +414,7 @@ class EmbeddingService:
                     try:
                         provider = self._providers[provider_name]
                         embeddings = await provider.embed_with_timeout(uncached_texts)
-                        
+
                         # Create results and cache
                         for text, embedding in zip(uncached_texts, embeddings):
                             result = EmbeddingResult(
@@ -517,22 +426,26 @@ class EmbeddingService:
                             )
                             batch_results.append(result)
                             await self._store_in_cache(text, embedding, provider_name)
-                        
+
                         # Update metrics
                         self._metrics["provider_usage"][provider_name] += len(uncached_texts)
                         logger.info(f"✅ Batch: {len(uncached_texts)} texts with {provider_name}")
                         break
-                        
+
                     except Exception as e:
                         last_error = str(e)
                         logger.warning(f"❌ Provider {provider_name} failed for batch: {e}")
+                        # Skip the local provider completely if it fails
+                        if provider_name == "local":
+                            logger.warning("⚠️ Skipping local provider due to error, trying next provider")
+                            continue
                         continue
-                
+
                 else:
                     # All providers failed, use mock
                     mock_embeddings = await self._providers["mock"].embed_with_timeout(uncached_texts)
                     self._metrics["provider_usage"]["mock"] += len(uncached_texts)
-                    
+
                     for text, embedding in zip(uncached_texts, mock_embeddings):
                         batch_results.append(
                             EmbeddingResult(
@@ -544,9 +457,9 @@ class EmbeddingService:
                                 metadata={"warning": "Used mock fallback", "error": last_error}
                             )
                         )
-            
+
             results.extend(batch_results)
-        
+
         self._metrics["total_requests"] += len(texts)
         return results
     
@@ -667,17 +580,105 @@ class OpenAIReturnProvider(StableEmbeddingProvider):
         }
 
 
+class LocalSentenceTransformerProvider(StableEmbeddingProvider):
+    """
+    Local Sentence Transformers provider - PRIMARY SOLUTION for RTX 3070.
+
+    Optimized for 8GB VRAM with fast, local inference.
+    """
+
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2", timeout: float = 30.0):
+        super().__init__(timeout)
+        self.model_name = model_name
+        self._model = None
+
+    async def _ensure_model(self):
+        """Ensure model is loaded."""
+        if self._model is None:
+            try:
+                logger.info(f"🔍 Local provider: Loading model {self.model_name}")
+                # Load model with GPU if available
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+                logger.info(f"🔍 Local provider: Using device {device}")
+
+                if device == "cuda":
+                    # Log initial GPU memory
+                    allocated = torch.cuda.memory_allocated() / 1024**2
+                    reserved = torch.cuda.memory_reserved() / 1024**2
+                    logger.info(f"🔍 GPU memory before loading: {allocated:.1f}MB allocated, {reserved:.1f}MB reserved")
+
+                start_time = time.time()
+                self._model = SentenceTransformer(self.model_name, device=device)
+                load_time = time.time() - start_time
+
+                if device == "cuda":
+                    # Log GPU memory after loading
+                    allocated_after = torch.cuda.memory_allocated() / 1024**2
+                    reserved_after = torch.cuda.memory_reserved() / 1024**2
+                    logger.info(f"🔍 GPU memory after loading: {allocated_after:.1f}MB allocated, {reserved_after:.1f}MB reserved")
+
+                logger.info(f"✅ Loaded {self.model_name} on {device} in {load_time:.2f}s")
+            except Exception as e:
+                logger.error(f"❌ Failed to load {self.model_name}: {e}")
+                logger.error(f"❌ Device: {'cuda' if torch.cuda.is_available() else 'cpu'}")
+                raise
+
+    async def _embed_impl(self, texts: List[str]) -> List[List[float]]:
+        """Generate embeddings using local SentenceTransformer."""
+        logger.info(f"🔍 Local provider: Starting batch embedding for {len(texts)} texts")
+
+        await self._ensure_model()
+
+        try:
+            # Log GPU memory before encoding if available
+            if torch.cuda.is_available():
+                allocated = torch.cuda.memory_allocated() / 1024**2
+                reserved = torch.cuda.memory_reserved() / 1024**2
+                logger.info(f"🔍 GPU memory before encoding: {allocated:.1f}MB allocated, {reserved:.1f}MB reserved")
+
+            # Encode texts - this runs on GPU if available
+            logger.info(f"🔍 Starting model.encode for batch of {len(texts)} texts")
+            start_time = time.time()
+            embeddings = self._model.encode(texts, convert_to_tensor=False)
+            elapsed = time.time() - start_time
+            logger.info(f"✅ Local provider: model.encode completed in {elapsed:.2f}s, got {len(embeddings)} embeddings")
+
+            # Log GPU memory after encoding if available
+            if torch.cuda.is_available():
+                allocated_after = torch.cuda.memory_allocated() / 1024**2
+                reserved_after = torch.cuda.memory_reserved() / 1024**2
+                logger.info(f"🔍 GPU memory after encoding: {allocated_after:.1f}MB allocated, {reserved_after:.1f}MB reserved")
+
+            result = embeddings.tolist()
+            logger.info(f"✅ Local provider: Returning {len(result)} embeddings successfully")
+            return result
+        except Exception as e:
+            logger.error(f"❌ Local embedding error: {e}")
+            logger.error(f"❌ Text lengths: {[len(t) for t in texts]}")
+            logger.error(f"❌ Model info: {self.get_info()}")
+            raise
+
+    def get_info(self) -> Dict[str, Any]:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        return {
+            "name": f"Local-{self.model_name}",
+            "dimensions": 384 if "MiniLM" in self.model_name else 768,  # Standard dims
+            "provider": "local",
+            "free": True,
+            "device": device,
+            "model_name": self.model_name
+        }
+
+
 # Convenience function for creating embedding service
 def create_embedding_service(
-    openrouter_api_key: Optional[str] = None,
-    openai_api_key: Optional[str] = None,
     redis_url: Optional[str] = None,
-    primary_provider: str = "openrouter"
+    primary_provider: str = "local",
+    local_model: str = "all-MiniLM-L6-v2"
 ) -> EmbeddingService:
-    """Create EmbeddingService with stable configuration."""
+    """Create EmbeddingService with local-only configuration."""
     return EmbeddingService(
-        openrouter_api_key=openrouter_api_key,
-        openai_api_key=openai_api_key,
         redis_url=redis_url,
-        primary_provider=primary_provider
+        primary_provider=primary_provider,
+        local_model=local_model
     )

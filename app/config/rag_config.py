@@ -39,9 +39,14 @@ class RAGConfig(BaseSettings):
     
     # Embedding Service Settings
     embedding_primary_provider: str = Field(
-        default="openrouter",
+        default="local",
         alias="EMBEDDING_PRIMARY_PROVIDER",
-        description="Primary embedding provider (openrouter, openai, or mock)"
+        description="Primary embedding provider - LOCAL ONLY (local or mock)"
+    )
+    embedding_local_model: str = Field(
+        default="all-MiniLM-L6-v2",
+        alias="EMBEDDING_LOCAL_MODEL",
+        description="Local sentence-transformers model for embeddings"
     )
     embedding_batch_size: int = Field(
         default=50,  # Reduced for stability
@@ -175,12 +180,13 @@ class RAGConfig(BaseSettings):
     def is_rag_enabled(self) -> bool:
         """Check if RAG system is fully enabled."""
         # RAG is enabled if the primary embedding provider has a valid API key
-        if self.embedding_primary_provider == "openrouter":
-            return self.enable_rag_system and self.openrouter_api_key is not None
+        # LOCAL PROVIDER: Always enabled (no API key needed)
+        if self.embedding_primary_provider == "local":
+            return self.enable_rag_system
         elif self.embedding_primary_provider == "openai":
             return self.enable_rag_system and self.openai_embedding_api_key is not None
         else:
-            # Mock provider is always available
+            # Mock provider is always available as final fallback
             return self.enable_rag_system
     
     def is_vector_db_enabled(self) -> bool:
@@ -197,13 +203,12 @@ class RAGConfig(BaseSettings):
     def get_embedding_config(self) -> dict:
         """Get complete embedding configuration for EmbeddingService."""
         return {
-            "openrouter_api_key": self.openrouter_api_key,
-            "openai_api_key": self.openai_embedding_api_key,
             "redis_url": self.redis_url if self.is_cache_enabled() else None,
             "cache_ttl": self.embedding_cache_ttl,
             "batch_size": self.embedding_batch_size,
             "embedding_timeout": self.embedding_timeout,
             "primary_provider": self.embedding_primary_provider,
+            "local_model": self.embedding_local_model,
         }
 
 

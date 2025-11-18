@@ -160,29 +160,37 @@ Future<void> _handleUpload(DocumentType type) async {
                 ),
                 _buildProcessingMetric(
                   'Генерация эмбеддингов',
-                  _ragProcessingDetails!.embeddingGenerationStatus == 'success'
-                      ? 'Успешно'
-                      : _ragProcessingDetails!.embeddingGenerationStatus == 'partial'
-                          ? 'Частично'
-                          : 'Ошибка',
-                  _ragProcessingDetails!.embeddingGenerationStatus == 'success'
-                      ? Colors.green
-                      : _ragProcessingDetails!.embeddingGenerationStatus == 'partial'
-                          ? Colors.orange
-                          : Colors.red,
+                  _ragProcessingDetails!.embeddingGenerationStatus == null
+                      ? 'Неизвестно'
+                      : _ragProcessingDetails!.embeddingGenerationStatus == 'success'
+                          ? 'Успешно'
+                          : _ragProcessingDetails!.embeddingGenerationStatus == 'partial'
+                              ? 'Частично'
+                              : 'Ошибка',
+                  _ragProcessingDetails!.embeddingGenerationStatus == null
+                      ? Colors.grey
+                      : _ragProcessingDetails!.embeddingGenerationStatus == 'success'
+                          ? Colors.green
+                          : _ragProcessingDetails!.embeddingGenerationStatus == 'partial'
+                              ? Colors.orange
+                              : Colors.red,
                 ),
                 _buildProcessingMetric(
                   'Индексация БД',
-                  _ragProcessingDetails!.vectorDbIndexingStatus == 'success'
-                      ? 'Успешно'
-                      : _ragProcessingDetails!.vectorDbIndexingStatus == 'partial'
-                          ? 'Частично'
-                          : 'Ошибка',
-                  _ragProcessingDetails!.vectorDbIndexingStatus == 'success'
-                      ? Colors.green
-                      : _ragProcessingDetails!.vectorDbIndexingStatus == 'partial'
-                          ? Colors.orange
-                          : Colors.red,
+                  _ragProcessingDetails!.vectorDbIndexingStatus == null
+                      ? 'Неизвестно'
+                      : _ragProcessingDetails!.vectorDbIndexingStatus == 'success'
+                          ? 'Успешно'
+                          : _ragProcessingDetails!.vectorDbIndexingStatus == 'partial'
+                              ? 'Частично'
+                              : 'Ошибка',
+                  _ragProcessingDetails!.vectorDbIndexingStatus == null
+                      ? Colors.grey
+                      : _ragProcessingDetails!.vectorDbIndexingStatus == 'success'
+                          ? Colors.green
+                          : _ragProcessingDetails!.vectorDbIndexingStatus == 'partial'
+                              ? Colors.orange
+                              : Colors.red,
                 ),
                 if (_ragProcessingDetails!.embeddingModelUsed != null)
                   _buildProcessingMetric(
@@ -210,7 +218,7 @@ Future<void> _handleUpload(DocumentType type) async {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        ..._ragProcessingDetails!.processingErrors!.map(
+                        ...(_ragProcessingDetails!.processingErrors ?? []).map(
                           (error) => Text(
                             '• $error',
                             style: const TextStyle(

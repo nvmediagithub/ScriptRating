@@ -134,33 +134,36 @@ async def _model_available(model_name: str, provider: Optional[LLMProvider] = No
 ACTIVE_PROVIDER = LLMProvider.LOCAL
 ACTIVE_MODEL = "llama2:7b"
 
-# Mock local model data
-MOCK_LOCAL_MODELS = {
-    "llama2:7b": LocalModelInfo(
-        model_name="llama2:7b",
-        size_gb=3.9,
+# Local transformer model data optimized for RTX 3070
+LOCAL_MODELS = {
+    "microsoft/DialoGPT-small": LocalModelInfo(
+        model_name="microsoft/DialoGPT-small",
+        size_gb=0.12,
         loaded=True,
-        context_window=4096,
-        max_tokens=2048,
+        context_window=1024,
+        max_tokens=512,
         last_used=datetime.utcnow()
     ),
-    "mistral:7b": LocalModelInfo(
-        model_name="mistral:7b",
-        size_gb=4.1,
+    "microsoft/DialoGPT-medium": LocalModelInfo(
+        model_name="microsoft/DialoGPT-medium",
+        size_gb=0.35,
         loaded=False,
-        context_window=4096,
-        max_tokens=2048,
+        context_window=1024,
+        max_tokens=512,
         last_used=None
     ),
-    "llama2:13b": LocalModelInfo(
-        model_name="llama2:13b",
-        size_gb=7.3,
+    "distilgpt2": LocalModelInfo(
+        model_name="distilgpt2",
+        size_gb=0.33,
         loaded=False,
-        context_window=4096,
-        max_tokens=2048,
+        context_window=1024,
+        max_tokens=512,
         last_used=None
     )
 }
+
+# Keep mock models for backward compatibility
+MOCK_LOCAL_MODELS = LOCAL_MODELS
 
 # Mock performance metrics
 MOCK_PERFORMANCE_METRICS = {

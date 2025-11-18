@@ -2,13 +2,14 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'rag_processing_details.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class RagProcessingDetails {
   final int totalChunks;
   final int chunksProcessed;
-  final String embeddingGenerationStatus;
+  final String? embeddingGenerationStatus;
+  @JsonKey(name: 'embedding_model_used')
   final String? embeddingModelUsed;
-  final String vectorDbIndexingStatus;
+  final String? vectorDbIndexingStatus;
   final int documentsIndexed;
   final double? indexingTimeMs;
   final List<String>? processingErrors;
@@ -16,9 +17,9 @@ class RagProcessingDetails {
   RagProcessingDetails({
     required this.totalChunks,
     required this.chunksProcessed,
-    required this.embeddingGenerationStatus,
+    this.embeddingGenerationStatus,
     this.embeddingModelUsed,
-    required this.vectorDbIndexingStatus,
+    this.vectorDbIndexingStatus,
     required this.documentsIndexed,
     this.indexingTimeMs,
     this.processingErrors,
@@ -49,8 +50,8 @@ class RagProcessingDetails {
         vectorDbIndexingStatus == 'success') {
       return '✅';
     }
-    if (embeddingGenerationStatus == 'partial' ||
-        vectorDbIndexingStatus == 'partial') {
+    if ((embeddingGenerationStatus == 'partial' && embeddingGenerationStatus != null) ||
+        (vectorDbIndexingStatus == 'partial' && vectorDbIndexingStatus != null)) {
       return '⚠️';
     }
     return '❌';
@@ -62,8 +63,8 @@ class RagProcessingDetails {
         vectorDbIndexingStatus == 'success') {
       return 'green';
     }
-    if (embeddingGenerationStatus == 'partial' ||
-        vectorDbIndexingStatus == 'partial') {
+    if ((embeddingGenerationStatus == 'partial' && embeddingGenerationStatus != null) ||
+        (vectorDbIndexingStatus == 'partial' && vectorDbIndexingStatus != null)) {
       return 'orange';
     }
     return 'red';

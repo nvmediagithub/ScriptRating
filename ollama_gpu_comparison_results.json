@@ -1,0 +1,88 @@
+{
+  "sentence_transformer": {
+    "service": "SentenceTransformer",
+    "runs": [
+      {
+        "run": 1,
+        "time_seconds": 0.30133819580078125,
+        "cpu_usage_percent": 24.5,
+        "memory_usage_percent": 27.15,
+        "gpu_memory_gb": 0.0,
+        "embeddings_count": 15,
+        "embedding_dim": 384
+      },
+      {
+        "run": 2,
+        "time_seconds": 0.06470108032226562,
+        "cpu_usage_percent": 19.3,
+        "memory_usage_percent": 27.2,
+        "gpu_memory_gb": 0.0,
+        "embeddings_count": 15,
+        "embedding_dim": 384
+      },
+      {
+        "run": 3,
+        "time_seconds": 0.05572032928466797,
+        "cpu_usage_percent": 19.0,
+        "memory_usage_percent": 27.2,
+        "gpu_memory_gb": 0.0,
+        "embeddings_count": 15,
+        "embedding_dim": 384
+      }
+    ]
+  },
+  "ollama": {
+    "service": "Ollama",
+    "runs": [
+      {
+        "run": 1,
+        "time_seconds": 37.63990783691406,
+        "cpu_usage_percent": 10.15,
+        "memory_usage_percent": 27.5,
+        "gpu_memory_gb": 0.0,
+        "embeddings_count": 15,
+        "embedding_dim": 768
+      },
+      {
+        "run": 2,
+        "time_seconds": 41.93384313583374,
+        "cpu_usage_percent": 4.9,
+        "memory_usage_percent": 27.75,
+        "gpu_memory_gb": 0.0,
+        "embeddings_count": 15,
+        "embedding_dim": 768
+      },
+      {
+        "run": 3,
+        "time_seconds": 39.63528060913086,
+        "cpu_usage_percent": 6.3,
+        "memory_usage_percent": 28.1,
+        "gpu_memory_gb": 0.0,
+        "embeddings_count": 15,
+        "embedding_dim": 768
+      }
+    ]
+  },
+  "summary": {
+    "sentence_transformer": {
+      "avg_time": 0.14058653513590494,
+      "min_time": 0.05572032928466797,
+      "max_time": 0.30133819580078125,
+      "avg_cpu": 20.933333333333334,
+      "avg_memory": 27.183333333333334,
+      "avg_gpu_memory": 0.0
+    },
+    "ollama": {
+      "avg_time": 39.73634386062622,
+      "min_time": 37.63990783691406,
+      "max_time": 41.93384313583374,
+      "avg_cpu": 7.116666666666667,
+      "avg_memory": 27.78333333333333,
+      "avg_gpu_memory": 0.0
+    },
+    "comparison": {
+      "time_ratio": 282.64686815286484,
+      "gpu_memory_ratio": 0.0
+    }
+  }
+}

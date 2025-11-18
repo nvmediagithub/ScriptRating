@@ -19,16 +19,17 @@ Detailed specifications for each core system component:
 3. **[Rule-Based Filter](modules/rule_based_filter.md)** - Fast pre-screening for content violations
 4. **[LLM Classifier](modules/llm_classifier.md)** - AI-powered content classification with RAG augmentation
 5. **[Rating Engine](modules/rating_engine.md)** - Age rating calculation following FZ-436 rules
+6. **[Simple Rules Engine](modules/simple_rules_engine.md)** - Lightweight per-scene keyword-based analysis for rapid feedback
 
 **Output & Feedback Systems:**
-6. **[Justification Builder](modules/justification_builder.md)** - Detailed explanations with legal citations
-7. **[Report Generator](modules/report_generator.md)** - Multi-format report generation (PDF/DOCX/JSON)
-8. **[RAG Orchestrator](modules/rag_orchestrator.md)** - Retrieval Augmented Generation coordination
-9. **[Feedback Processor](modules/feedback_processor.md)** - User correction handling and learning
-10. **[History Manager](modules/history_manager.md)** - Analysis history and audit trails
+7. **[Justification Builder](modules/justification_builder.md)** - Detailed explanations with legal citations
+8. **[Report Generator](modules/report_generator.md)** - Multi-format report generation (PDF/DOCX/JSON)
+9. **[RAG Orchestrator](modules/rag_orchestrator.md)** - Retrieval Augmented Generation coordination
+10. **[Feedback Processor](modules/feedback_processor.md)** - User correction handling and learning
+11. **[History Manager](modules/history_manager.md)** - Analysis history and audit trails
 
 **Frontend & UI:**
-11. **[Flutter UI](modules/flutter_ui.md)** - Cross-platform user interface architecture
+12. **[Flutter UI](modules/flutter_ui.md)** - Cross-platform user interface architecture
 
 ### 🏛️ System Diagrams (`diagrams/`)
 Visual documentation for complex system workflows:

@@ -113,4 +113,24 @@ class ApiService {
       throw Exception('Failed to load analysis result: $e');
     }
   }
+
+  /// Simplified per-scene rule-based analysis.
+  /// Calls backend /analysis/check_scene and returns raw JSON map.
+  Future<Map<String, dynamic>> checkScene({
+    required String scriptId,
+    required String sceneId,
+    required String sceneText,
+  }) async {
+    try {
+      final payload = {
+        'script_id': scriptId,
+        'scene_id': sceneId,
+        'scene_text': sceneText,
+      };
+      final response = await _dio.post('/analysis/check_scene', data: payload);
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Failed to run scene check: $e');
+    }
+  }
 }

@@ -157,16 +157,27 @@ class VectorDatabaseService:
         """Initialize Qdrant client, Redis cache, and create collection if needed."""
         try:
             # Initialize Qdrant client with connection pooling
-            if self.qdrant_url:
-                self._client = AsyncQdrantClient(
-                    url=self.qdrant_url,
-                    api_key=self.qdrant_api_key,
-                    timeout=self.timeout,
-                    limits=httpx.Limits(max_connections=self.max_connections),
-                )
+            if self.qdrant_url and self.qdrant_url.startswith("http"):
+                # Try external Qdrant server first
+                try:
+                    temp_client = AsyncQdrantClient(
+                        url=self.qdrant_url,
+                        api_key=self.qdrant_api_key,
+                        timeout=self.timeout,
+                        limits=httpx.Limits(max_connections=self.max_connections),
+                    )
+                    # Test connection
+                    await temp_client.get_collections()
+                    self._client = temp_client
+                    logger.info(f"Connected to external Qdrant server: {self.qdrant_url}")
+                except Exception as e:
+                    logger.warning(f"External Qdrant server not available ({e}), falling back to in-memory mode")
+                    self._client = AsyncQdrantClient(location=":memory:")
+                    logger.info("Using in-memory Qdrant for development/testing")
             else:
                 # In-memory mode for development/testing
                 self._client = AsyncQdrantClient(location=":memory:")
+                logger.info("Using in-memory Qdrant mode")
 
             logger.info(f"Qdrant client initialized: {self.qdrant_url or 'in-memory'}")
 
@@ -190,49 +201,73 @@ class VectorDatabaseService:
             logger.error(f"Error initializing VectorDatabaseService: {e}")
             raise
 
-    async def _ensure_collection_exists(self) -> None:
-        """Ensure the collection exists, create if not."""
+    async def _ensure_collection_exists(self, expected_vector_size: Optional[int] = None) -> None:
+        """
+        Ensure the collection exists with the correct vector size, create or recreate if needed.
+
+        Args:
+            expected_vector_size: Expected vector size (used when adapting to embedding service)
+        """
         try:
             collections = await self._client.get_collections()
             collection_names = [c.name for c in collections.collections]
-            
+
+            target_vector_size = expected_vector_size or self.vector_size
+
             if self.collection_name not in collection_names:
-                # Map distance metric string to Qdrant enum
-                distance_map = {
-                    "Cosine": Distance.COSINE,
-                    "Euclid": Distance.EUCLID,
-                    "Dot": Distance.DOT,
-                }
-                
-                # Create collection with optimized configuration
-                vectors_config = VectorParams(
-                    size=self.vector_size,
-                    distance=distance_map.get(self.distance_metric, Distance.COSINE),
-                )
-
-                hnsw_config = HnswConfigDiff(
-                    m=self.hnsw_config_m,
-                    ef_construct=self.hnsw_config_ef_construct,
-                )
-
-                optimizers_config = OptimizersConfigDiff()
-
-                await self._client.create_collection(
-                    collection_name=self.collection_name,
-                    vectors_config=vectors_config,
-                    hnsw_config=hnsw_config,
-                    optimizers_config=optimizers_config,
-                    replication_factor=self.replication_factor,
-                    write_consistency_factor=self.write_consistency_factor,
-                    on_disk_payload=self.on_disk_payload,
-                )
-                logger.info(f"Created collection: {self.collection_name}")
+                # Create new collection
+                await self._create_collection(target_vector_size)
+                logger.info(f"Created collection: {self.collection_name} with vector size {target_vector_size}")
             else:
-                logger.info(f"Collection already exists: {self.collection_name}")
-                
+                # Check if existing collection has correct vector size
+                collection_info = await self._client.get_collection(self.collection_name)
+                current_vector_size = collection_info.config.params.vectors.size
+
+                if current_vector_size != target_vector_size:
+                    logger.warning(f"Collection {self.collection_name} has vector size {current_vector_size}, but expected {target_vector_size}. Recreating...")
+                    # Delete existing collection
+                    await self._client.delete_collection(self.collection_name)
+                    # Create new collection with correct size
+                    await self._create_collection(target_vector_size)
+                    logger.info(f"Recreated collection: {self.collection_name} with vector size {target_vector_size}")
+                else:
+                    logger.info(f"Collection already exists: {self.collection_name} with correct vector size {target_vector_size}")
+
         except Exception as e:
             logger.error(f"Error ensuring collection exists: {e}")
             raise
+
+    async def _create_collection(self, vector_size: int) -> None:
+        """Create collection with specified vector size."""
+        # Map distance metric string to Qdrant enum
+        distance_map = {
+            "Cosine": Distance.COSINE,
+            "Euclid": Distance.EUCLID,
+            "Dot": Distance.DOT,
+        }
+
+        # Create collection with optimized configuration
+        vectors_config = VectorParams(
+            size=vector_size,
+            distance=distance_map.get(self.distance_metric, Distance.COSINE),
+        )
+
+        hnsw_config = HnswConfigDiff(
+            m=self.hnsw_config_m,
+            ef_construct=self.hnsw_config_ef_construct,
+        )
+
+        optimizers_config = OptimizersConfigDiff()
+
+        await self._client.create_collection(
+            collection_name=self.collection_name,
+            vectors_config=vectors_config,
+            hnsw_config=hnsw_config,
+            optimizers_config=optimizers_config,
+            replication_factor=self.replication_factor,
+            write_consistency_factor=self.write_consistency_factor,
+            on_disk_payload=self.on_disk_payload,
+        )
 
     async def close(self) -> None:
         """Close Qdrant client and Redis connections."""
@@ -288,9 +323,35 @@ class VectorDatabaseService:
         wait: bool = True,
     ) -> List[str]:
         """Upsert a batch of documents."""
+        if not documents:
+            return []
+
+        # Check vector size and adapt collection if needed
+        first_vector = None
+        for doc in documents:
+            vector = doc.get("vector")
+            if vector:
+                first_vector = vector
+                break
+
+        if first_vector:
+            actual_vector_size = len(first_vector)
+            if actual_vector_size != self.vector_size:
+                logger.info(f"Vector size mismatch detected: expected {self.vector_size}, got {actual_vector_size}. Adapting collection...")
+                await self._ensure_collection_exists(actual_vector_size)
+                self.vector_size = actual_vector_size  # Update instance variable
+
         points = []
         for doc in documents:
-            doc_id = doc.get("id") or str(uuid.uuid4())
+            doc_id = doc.get("id")
+            if not doc_id:
+                doc_id = str(uuid.uuid4())
+            elif not isinstance(doc_id, str) or len(doc_id) != 36:
+                # Ensure it's a valid UUID string
+                try:
+                    uuid.UUID(doc_id)
+                except (ValueError, TypeError):
+                    doc_id = str(uuid.uuid4())
             vector = doc.get("vector")
             payload = doc.get("payload", {})
 

@@ -16,6 +16,11 @@ class HomeScreen extends ConsumerWidget {
         title: const Text('Script Rating App'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.health_and_safety_outlined),
+            tooltip: 'Health dashboard',
+            onPressed: () => context.go('/health'),
+          ),
+          IconButton(
             icon: const Icon(Icons.smart_toy_outlined),
             tooltip: 'LLM control center',
             onPressed: () => context.go('/llm'),

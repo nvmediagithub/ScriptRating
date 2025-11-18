@@ -10,6 +10,7 @@ import 'screens/history_screen.dart';
 import 'screens/feedback_screen.dart';
 import 'screens/report_generation_screen.dart';
 import 'screens/llm_dashboard_screen.dart';
+import 'screens/health_dashboard_screen.dart';
 
 void main() {
   setupLocator();
@@ -78,6 +79,10 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/llm',
       builder: (context, state) => const LlmDashboardScreen(),
+    ),
+    GoRoute(
+      path: '/health',
+      builder: (context, state) => const HealthDashboardScreen(),
     ),
   ],
 );

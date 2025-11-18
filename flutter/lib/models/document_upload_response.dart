@@ -5,7 +5,7 @@ import 'rag_processing_details.dart';
 
 part 'document_upload_response.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class DocumentUploadResponse {
   final String documentId;
   final String filename;

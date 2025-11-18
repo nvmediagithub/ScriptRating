@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     openrouter_timeout: int = 30
     
     # Enhanced Embedding Service Configuration
-    embedding_primary_provider: str = "openrouter"  # Changed to OpenRouter for free embeddings
+    embedding_primary_provider: str = "local"  # Use local models as primary provider
     openai_embedding_api_key: Optional[str] = None
     openai_embedding_model: str = "text-embedding-3-large"
     huggingface_api_token: Optional[str] = None

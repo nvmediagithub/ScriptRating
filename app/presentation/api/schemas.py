@@ -150,6 +150,33 @@ class ScriptAnalysisResponse(BaseModel):
     recommendations: Optional[List[str]] = Field(None, description="Improvement recommendations")
 
 
+class SceneCheckRequest(BaseModel):
+    """Request model for simplified per-scene rule-based analysis."""
+    script_id: str = Field(..., description="Identifier of the script")
+    scene_id: str = Field(..., description="Identifier of the scene within the script")
+    scene_text: str = Field(..., description="Raw text of the scene to analyze")
+
+
+class SceneViolation(BaseModel):
+    """Single violation detected in a scene."""
+    rule_id: str = Field(..., description="Identifier of the rule that was triggered")
+    law_ref: Optional[str] = Field(None, description="Reference to normative act or internal guideline")
+    rating_level: AgeRating = Field(..., description="Rating level associated with this rule")
+    category: Category = Field(..., description="Content category for this violation")
+    snippet: str = Field(..., description="Text fragment that triggered the violation")
+    comment: Optional[str] = Field(None, description="Human-readable explanation of the violation")
+
+
+class SceneCheckResponse(BaseModel):
+    """Response model for simplified per-scene analysis."""
+    script_id: str = Field(..., description="Identifier of the script")
+    scene_id: str = Field(..., description="Identifier of the analyzed scene")
+    normative_doc_id: str = Field(..., description="Identifier of the normative ruleset used")
+    normative_doc_version: str = Field(..., description="Version of the normative ruleset")
+    final_rating: AgeRating = Field(..., description="Calculated age rating for the scene")
+    violations: List[SceneViolation] = Field(default_factory=list, description="List of detected violations")
+
+
 class AnalysisStatusResponse(BaseModel):
     """Response model for analysis status check."""
     analysis_id: str = Field(..., description="Analysis ID")

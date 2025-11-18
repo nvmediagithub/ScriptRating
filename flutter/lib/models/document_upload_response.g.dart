@@ -9,15 +9,15 @@ part of 'document_upload_response.dart';
 DocumentUploadResponse _$DocumentUploadResponseFromJson(
   Map<String, dynamic> json,
 ) => DocumentUploadResponse(
-  documentId: json['documentId'] as String,
+  documentId: json['document_id'] as String,
   filename: json['filename'] as String,
-  uploadedAt: DateTime.parse(json['uploadedAt'] as String),
-  documentType: $enumDecode(_$DocumentTypeEnumMap, json['documentType']),
-  chunksIndexed: (json['chunksIndexed'] as num?)?.toInt(),
-  ragProcessingDetails: json['ragProcessingDetails'] == null
+  uploadedAt: DateTime.parse(json['uploaded_at'] as String),
+  documentType: $enumDecode(_$DocumentTypeEnumMap, json['document_type']),
+  chunksIndexed: (json['chunks_indexed'] as num?)?.toInt(),
+  ragProcessingDetails: json['rag_processing_details'] == null
       ? null
       : RagProcessingDetails.fromJson(
-          json['ragProcessingDetails'] as Map<String, dynamic>,
+          json['rag_processing_details'] as Map<String, dynamic>,
         ),
   status: json['status'] as String,
 );
@@ -25,12 +25,12 @@ DocumentUploadResponse _$DocumentUploadResponseFromJson(
 Map<String, dynamic> _$DocumentUploadResponseToJson(
   DocumentUploadResponse instance,
 ) => <String, dynamic>{
-  'documentId': instance.documentId,
+  'document_id': instance.documentId,
   'filename': instance.filename,
-  'uploadedAt': instance.uploadedAt.toIso8601String(),
-  'documentType': _$DocumentTypeEnumMap[instance.documentType]!,
-  'chunksIndexed': instance.chunksIndexed,
-  'ragProcessingDetails': instance.ragProcessingDetails,
+  'uploaded_at': instance.uploadedAt.toIso8601String(),
+  'document_type': _$DocumentTypeEnumMap[instance.documentType]!,
+  'chunks_indexed': instance.chunksIndexed,
+  'rag_processing_details': instance.ragProcessingDetails,
   'status': instance.status,
 };
 
